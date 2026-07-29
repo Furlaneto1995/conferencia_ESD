@@ -268,6 +268,14 @@ section.screen.active{display:block}
 .rtable td{display:block;border:none;padding:0;min-width:0}
 .rtable td:first-child{flex:1;font-weight:800;letter-spacing:.4px;word-break:break-word}
 .rtable td:last-child{flex:none;white-space:nowrap;color:var(--muted);font-size:12px}
+
+/* planilha (relatório simplificado) */
+.stable{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+.stable th{background:#0f2740;color:#fff;text-align:left;padding:10px;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;border:1px solid #0f2740}
+.stable td{padding:10px;border:1px solid #cbd5e1;font-weight:600;word-break:break-word;background:#fff}
+.stable tbody tr:nth-child(even) td{background:#f1f5f9}
+.stable tfoot td{background:var(--okbg);font-weight:800}
+.stable .num{text-align:right;white-space:nowrap}
 .signs{display:grid;gap:26px;margin-top:36px}
 .sign{border-top:1.5px solid #94a3b8;text-align:center;font-size:12px;color:var(--muted);padding-top:6px}
 @media(min-width:700px){.signs{grid-template-columns:1fr 1fr;gap:30px}}
@@ -392,6 +400,7 @@ section.screen.active{display:block}
 <section id="scr-rep" class="screen">
   <div class="report" id="report"></div>
   <div class="bigbtns no-print">
+    <button class="bigbtn b-op" style="min-height:64px;font-size:16px" onclick="exportCSV()">📊 Baixar planilha</button>
     <button class="bigbtn b-bob" style="min-height:64px;font-size:16px" onclick="window.print()">🖨️ Imprimir / salvar PDF</button>
     <button class="bigbtn b-rom" style="min-height:64px;font-size:16px" onclick="novaConf()">↩ Nova conferência</button>
   </div>
@@ -1044,10 +1053,12 @@ function confirmFin(){
 }
 
 /* ============ RELATÓRIO (final e reaberto do histórico) ============ */
+let lastRec = null;
 function renderReport(rec){
+  lastRec = rec;
   const fim = new Date(rec.fim);
-  const nRom = rec.grupos.filter(g=>g.tipo==="ROM");
-  const nOP  = rec.grupos.filter(g=>g.tipo==="OP");
+  const nRom = rec.grupos.filter(g=>g.tipo==="ROM").length;
+  const nOP  = rec.grupos.filter(g=>g.tipo==="OP").length;
   const totBob = rec.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
   const totLid = rec.grupos.reduce((a,g)=>a+g.bobinas.length,0);
   document.getElementById("report").innerHTML = `
@@ -1059,17 +1070,54 @@ function renderReport(rec){
     <div class="rmeta">
       <div><b>Operador:</b> ${rec.operador}</div>
       <div><b>Duração:</b> ${durMin(rec)} min</div>
-      <div><b>Quantidade de romaneios / OP's:</b> ${nRom.length} / ${nOP.length}</div>
+      <div><b>Quantidade de romaneios / OP's:</b> ${nRom} / ${nOP}</div>
       <div><b>Bobinas / pacotes:</b> ${totBob} (lidos ${totLid} + informados ${totBob-totLid})</div>
       <div><b>Leitura via:</b> ${rec.modo==="camera"?"Câmera":"Coletor de dados"}</div>
       ${rec.dups?`<div><b>Leituras duplicadas ignoradas:</b> ${rec.dups}</div>`:""}
     </div>
-    ${rec.grupos.map(g=>`
-      <div class="section-title" style="margin:14px 0 6px">${g.tipo==="ROM"?"🧾 Romaneio":"⚙️ OP"}: ${g.cod}${g.dados&&g.dados.cliente&&g.dados.cliente!=="—" ? " · "+g.dados.cliente : ""} · ${g.bobinas.length+(g.qManual||0)} un</div>
-      <table class="rtable"><tbody>
-        ${g.bobinas.map((b,i)=>`<tr><td>${String(i+1).padStart(2,"0")} · ${b.cod}</td><td>${b.hora}</td></tr>`).join("")}
-        ${(g.qManual||0)?`<tr><td>✎ Informado manualmente (sem bip)</td><td>+${g.qManual} un</td></tr>`:""}
-      </tbody></table>`).join("")}`;
+    <table class="stable">
+      <thead><tr><th style="width:38px">#</th><th>Vínculo</th><th class="num" style="width:110px">Qtd.</th></tr></thead>
+      <tbody>
+        ${rec.grupos.map((g,i)=>`
+          <tr><td>${String(i+1).padStart(2,"0")}</td>
+              <td>${g.tipo==="ROM"?"Romaneio":"OP"} ${g.cod}</td>
+              <td class="num">${g.bobinas.length+(g.qManual||0)}</td></tr>`).join("")}
+      </tbody>
+      <tfoot><tr><td></td><td><b>TOTAL</b></td><td class="num"><b>${totBob}</b></td></tr></tfoot>
+    </table>`;
+}
+
+/* ============ EXPORTAR PLANILHA (CSV/Excel) ============ */
+function exportCSV(){
+  if(!lastRec) return;
+  const rec = lastRec;
+  const fim = new Date(rec.fim);
+  const nRom = rec.grupos.filter(g=>g.tipo==="ROM").length;
+  const nOP  = rec.grupos.filter(g=>g.tipo==="OP").length;
+  const totBob = rec.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
+  const totLid = rec.grupos.reduce((a,g)=>a+g.bobinas.length,0);
+  const rows = [
+    ["RELATÓRIO DE CONFERÊNCIA"],
+    ["Gerado em", fim.toLocaleString("pt-BR")],
+    ["Operador", rec.operador],
+    ["Duração (min)", durMin(rec)],
+    ["Quantidade de romaneios / OP's", nRom+" / "+nOP],
+    ["Bobinas / pacotes", totBob+" (lidos "+totLid+" + informados "+(totBob-totLid)+")"],
+    ["Leitura via", rec.modo==="camera"?"Câmera":"Coletor de dados"],
+    ...(rec.dups ? [["Leituras duplicadas ignoradas", rec.dups]] : []),
+    [],
+    ["#","Vínculo","Qtd."],
+    ...rec.grupos.map((g,i)=>[String(i+1).padStart(2,"0"), (g.tipo==="ROM"?"Romaneio ":"OP ")+g.cod, g.bobinas.length+(g.qManual||0)]),
+    ["","TOTAL", totBob]
+  ];
+  const csv = "\ufeffsep=;\n" + rows.map(r=>r.join(";")).join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "conferencia_" + fim.toISOString().slice(0,10) + "_" +
+               fim.toTimeString().slice(0,5).replace(":","") + ".csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
 }
 
 /* ============ HISTÓRICO ============ */
@@ -1167,5 +1215,5 @@ if(!modo){
 loadHist(); seedHist();
 renderUser(); render(); go("scr-main");
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a22cc18069ebf198',t:'MTc4NTMzNDczNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a22cc648bddbf198',t:'MTc4NTMzNDkzMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
