@@ -483,6 +483,7 @@ document.getElementById("inp-op").addEventListener("keydown",e=>{
   if(e.key==="Enter"){ const v=e.target.value.trim().toUpperCase(); if(v){ onOP(v); } }
 });
 function onOP(code){
+  const reabrirCam = (camMode==="op" || modo==="camera");   // captura antes do closeCam limpar
   op = code;
   if(!inicio) inicio = new Date();
   document.getElementById("inp-op").value = "";
@@ -490,7 +491,7 @@ function onOP(code){
   feedback("ok","OP vinculada", code);
   closeCam();
   go("scr-bob");
-  if(camMode==="op" || modo==="camera"){ setTimeout(()=>openCam("bob"), 450); }
+  if(reabrirCam){ setTimeout(()=>openCam("bob"), 450); }
 }
 
 /* ============ CÂMERA ============ */
@@ -633,6 +634,7 @@ function retryCam(){
   else startLibCam({facingMode:"environment"});
 }
 async function closeCam(){
+  camMode = null;                            // limpa o contexto da leitura
   stopStreams(); await stopLib();
   showStatus(false);
   camEl().classList.add("hidden");
@@ -641,7 +643,11 @@ async function closeCam(){
   focusCollector();
 }
 
-/* ============ ROTEAMENTO DOS CÓDIGOS ============ */
+/* ============ ROTEAMENTO DOS CÓDIGOS ============
+   O contexto define o tipo da leitura (não o formato do código):
+   • câmera/tela de LER ROMANEIO → o código lido É o romaneio (qualquer código de barras)
+   • tela de BOBINAS             → bobina vinculada ao romaneio
+   • tela da OP                  → bobinas sem romaneio vinculadas à OP informada */
 function onCode(raw){
   const code = (raw||"").trim().toUpperCase();
   if(!code) return;
@@ -649,28 +655,32 @@ function onCode(raw){
   if(code===lastCode && now-lastT<1200) return;
   lastCode = code; lastT = now;
 
-  // na tela da OP (ou câmera em modo OP), qualquer código vira a OP
-  if(document.getElementById("scr-op").classList.contains("active") || camMode==="op"){
-    onOP(code); return;
+  const camAberta = !document.getElementById("cam").classList.contains("hidden");
+  if(camAberta){
+    if(camMode==="rom"){ onRomaneio(code); return; }
+    if(camMode==="op"){ onOP(code); return; }
+    onBobina(code); return;                  // camMode "bob"
   }
-  if(/^ROM/.test(code)) onRomaneio(code);
-  else onBobina(code);
+  if(document.getElementById("scr-op").classList.contains("active")){ onOP(code); return; }
+  if(document.getElementById("scr-bob").classList.contains("active")){ onBobina(code); return; }
+  onRomaneio(code);                          // tela inicial = bip do romaneio
 }
 
 function onRomaneio(code){
-  const r = ROMANEIOS[code];
-  if(!r){ feedback("err","Romaneio não encontrado", code); return; }
-  if((rom && rom.cod===code)){ feedback("warn","Romaneio já vinculado", code); return; }
+  // qualquer código de barras lido aqui é o romaneio; os dados viriam do ERP (aqui, mock)
+  const desdeCameraRom = camMode==="rom";
+  if(rom && rom.cod===code){ feedback("warn","Romaneio já vinculado", code); return; }
   if((rom || op) && bobinas.length){
     feedback("warn","Já existe um vínculo", "Finalize antes de trocar"); return;
   }
-  rom = { cod: code, ...r };
+  const d = ROMANEIOS[code] || { cliente:"— (virá do ERP)", destino:"—", transp:"—", motorista:"—" };
+  rom = { cod: code, ...d };
   if(!inicio) inicio = new Date();
   renderVincCard();
   feedback("ok","Romaneio aberto", code);
   closeCam();
   go("scr-bob");
-  if(camMode==="rom"){ setTimeout(()=>openCam("bob"), 500); }
+  if(desdeCameraRom){ setTimeout(()=>openCam("bob"), 500); }
   updateFin();
 }
 
@@ -856,5 +866,5 @@ if(window.matchMedia("(min-width:900px)").matches){ setModo("coletor"); }
 else { setModo("camera"); }
 renderUser(); renderVincCard(); render(); go("scr-main");
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a22c18f06f002535',t:'MTc4NTMyNzgzMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
