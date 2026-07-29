@@ -112,8 +112,6 @@ section.screen.active{display:block}
 .collector input:focus{border-color:var(--brand);box-shadow:0 0 0 4px rgba(14,111,221,.15);background:#fff}
 .collector p{font-size:11.5px;color:var(--muted);text-align:center;margin-top:6px}
 
-.demo-line{text-align:center;margin-top:12px;font-size:12px;color:var(--muted)}
-.demo-line b{color:var(--brand2);cursor:pointer}
 
 .toggles{display:flex;gap:16px;justify-content:center;margin-top:14px;font-size:12.5px;color:var(--muted)}
 .toggles label{display:flex;align-items:center;gap:6px;user-select:none}
@@ -289,35 +287,26 @@ section.screen.active{display:block}
 
 <!-- ============ TELA 1 · INÍCIO ============ -->
 <section id="scr-main" class="screen active">
-  <div class="steps">
-    <div class="step"><b>1</b>Ler romaneio / OP</div>
-    <div class="step"><b>2</b>Ler bobinas</div>
-    <div class="step"><b>3</b>Finalizar</div>
-  </div>
-
   <div class="bigbtns">
     <button class="bigbtn b-rom" onclick="openCam('rom')">
       <span class="bico">🧾</span>
-      <span>LER ROMANEIO<small>bobinas vinculadas ao romaneio</small></span>
+      <span>LER ROMANEIO</span>
     </button>
     <button class="bigbtn b-semrom" onclick="goOP()">
       <span class="bico">📦</span>
-      <span>LER BOBINAS SEM ROMANEIO<small>vamos pedir o número da OP antes</small></span>
+      <span>LER BOBINAS SEM ROMANEIO</span>
     </button>
     <button class="bigbtn b-hist" onclick="goHist()">
       <span class="bico">📋</span>
-      <span>CONFERÊNCIAS REALIZADAS<small>romaneios e OPs com as bobinas lidas</small></span>
+      <span>CONFERÊNCIAS REALIZADAS</span>
       <span class="hcnt" id="hist-count">0</span>
     </button>
   </div>
 
   <div id="main-vincs"></div>
 
-  <div class="demo-line no-print">Código de teste: <b onclick="onCode('ROM-2026-058412')">ROM-2026-058412</b></div>
-
   <div class="collector if-coletor no-print">
     <input id="inp-home" inputmode="none" autocomplete="off" placeholder="⌨️ BIPE O ROMANEIO (COLETOR)">
-    <p>Modo coletor ativo — o campo recebe a leitura direto do coletor de dados.</p>
   </div>
 
   <div class="toggles no-print">
@@ -333,13 +322,11 @@ section.screen.active{display:block}
     <div class="card-e">
       <div class="eico">⚙️</div>
       <h2>Informe o número da OP</h2>
-      <p class="hint">As bobinas lidas ficarão vinculadas a esta Ordem de Produção (sem romaneio).</p>
       <input id="inp-op" autocomplete="off" placeholder="OP-000000">
       <div class="bigbtns">
         <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="confirmOP()">✓ CONFIRMAR OP</button>
         <button class="bigbtn b-bob if-camera" style="min-height:64px;font-size:17px" onclick="openCam('op')">📷 ESCANEAR OP</button>
       </div>
-      <p class="hint if-coletor" style="margin-top:10px">Modo coletor: bipe o código da OP direto no campo acima.</p>
     </div>
   </div>
 </section>
@@ -353,23 +340,22 @@ section.screen.active{display:block}
   <div class="bigbtns">
     <button class="bigbtn b-bob if-camera" onclick="openCam('bob')">
       <span class="bico">📦</span>
-      <span>LER BOBINA<small>a câmera abre em tela cheia · leitura contínua</small></span>
+      <span>LER BOBINA</span>
     </button>
     <button class="bigbtn b-qtd" onclick="openQtd()">
       <span class="bico">🔢</span>
-      <span>INFORMAR QUANTIDADE<small>digite a qtde de bobinas/pacotes sem bipar</small></span>
+      <span>INFORMAR QUANTIDADE</span>
     </button>
   </div>
 
   <div class="counter">
     <div class="num" id="ct-num">0</div>
-    <div class="lbl">bobinas na conferência<span id="ct-vinc">—</span></div>
+    <div class="lbl">bobinas<br>neste romaneio</div>
     <div class="dup"><b id="ct-dup">0</b><span>duplicadas</span></div>
   </div>
 
   <div class="collector if-coletor no-print" style="margin-top:14px">
     <input id="inp-bob" inputmode="none" autocomplete="off" placeholder="⌨️ BIPE A BOBINA (COLETOR)">
-    <p>Leitura contínua pelo coletor de dados — o campo já está ativo.</p>
   </div>
 
   <div class="section-title">Últimas leituras</div>
@@ -389,7 +375,6 @@ section.screen.active{display:block}
     <div class="ico">📋</div>
     <div class="grow">
       <div class="t">Conferências realizadas</div>
-      <div class="d">Toque em um item para ver os vínculos e as bobinas</div>
     </div>
   </div>
   <div id="hist-list"></div>
@@ -417,7 +402,6 @@ section.screen.active{display:block}
     <div class="card-e" style="margin-top:10px">
       <div class="eico">👤</div>
       <h2>Quem está operando?</h2>
-      <p class="hint">Este nome aparecerá no relatório final exportado.</p>
       <input id="inp-user" autocomplete="off" placeholder="Seu nome" style="text-transform:none;letter-spacing:.5px">
       <div class="bigbtns">
         <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="saveUser()">✓ SALVAR</button>
@@ -433,7 +417,6 @@ section.screen.active{display:block}
     <div class="card-e" style="margin-top:10px">
       <div class="eico">🔢</div>
       <h2>Informar quantidade</h2>
-      <p class="hint" id="qtd-vinc">—</p>
       <input id="inp-qtd" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="0">
       <div class="bigbtns">
         <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="saveQtd()">✓ CONFIRMAR</button>
@@ -454,7 +437,6 @@ section.screen.active{display:block}
   <div class="cam-frame"></div>
   <div class="cam-status" id="cam-status"><div class="spin"></div><span id="cam-status-txt">Iniciando câmera…</span></div>
   <div class="cam-bottom">
-    <button class="bigbtn b-simu" onclick="simulacao()">🎲 Simular bip (demo)</button>
     <button class="bigbtn b-close" onclick="closeCam()">✕ Fechar câmera</button>
   </div>
 </div>
@@ -564,7 +546,7 @@ function go(id){
     ft.classList.remove("hidden");
   } else if(id==="scr-bob"){
     btn.dataset.mode = "trocar";
-    btn.textContent = "🔁 TROCAR VÍNCULO / LER OUTRO";
+    btn.textContent = "Fechar";
     btn.classList.add("troc");
     btn.disabled = false;
     ft.classList.remove("hidden");
@@ -616,7 +598,7 @@ function addVinculo(tipo, code, dados){
 
 function onRomaneio(code){
   // qualquer código de barras lido aqui é o romaneio; dados viriam do ERP (mock)
-  const d = ROMANEIOS[code] || { cliente:"— (virá do ERP)", destino:"—", transp:"—", motorista:"—" };
+  const d = ROMANEIOS[code] || { cliente:"—", destino:"—", transp:"—", motorista:"—" };
   addVinculo("ROM", code, d);
   closeCam(); go("scr-bob");          // NÃO abre câmera automática
 }
@@ -645,11 +627,7 @@ function onBobina(code){
 
 /* ============ INFORMAR QUANTIDADE (sem bip) ============ */
 function openQtd(){
-  const g = gA();
-  if(!g){ feedback("warn","Leia o romaneio primeiro","ou informe uma OP"); return; }
-  document.getElementById("qtd-vinc").textContent =
-    "Será somada ao vínculo atual: " + (g.tipo==="ROM"?"🧾 ":"⚙️ ") + g.cod +
-    " · já tem " + (g.bobinas.length + (g.qManual||0)) + " un.";
+  if(!gA()){ feedback("warn","Leia o romaneio primeiro","ou informe uma OP"); return; }
   document.getElementById("inp-qtd").value = "";
   document.getElementById("qtd-ov").classList.remove("hidden");
   setTimeout(()=>document.getElementById("inp-qtd").focus(),150);   // abre teclado numérico
@@ -779,7 +757,7 @@ function camFail(e){
   el.innerHTML = `
     <div class="fico">📷</div>
     <b>${titulo}</b>
-    <p>${extra}<br>No celular/coletor pelo <b>GitHub Pages (HTTPS)</b> a imagem abre normalmente.<br>Aqui, teste com <b>🎲 Simular bip</b> abaixo.</p>
+    <p>${extra}</p>
     <button class="retry" onclick="retryCam()">↻ Tentar novamente</button>`;
   camEl().appendChild(el);
 }
@@ -832,21 +810,6 @@ function focusCollector(){
   const id = document.getElementById("scr-bob").classList.contains("active") ? "inp-bob" :
              document.getElementById("scr-main").classList.contains("active") ? "inp-home" : null;
   if(id) document.getElementById(id).focus();
-}
-
-/* ============ DEMO ============ */
-function simulacao(){
-  if(camMode==="rom"){
-    const g = gA();
-    const code = (g && g.cod==="ROM-2026-058412") ? "ROM-2026-058413" : "ROM-2026-058412";
-    onCode(code); return;
-  }
-  if(camMode==="op"){ onCode("OP-445566"); return; }
-  const todas = grupos.flatMap(g=>g.bobinas.map(b=>b.cod));
-  let code;
-  if(todas.length && Math.random()<0.15) code = todas[Math.floor(Math.random()*todas.length)];
-  else code = "7898" + String(Math.floor(Math.random()*90000000)+10000000);
-  onCode(code);
 }
 
 /* ============ RENDER ============ */
@@ -922,14 +885,11 @@ function bump(){
     const e=document.getElementById(id); e.classList.remove("bump"); void e.offsetWidth; e.classList.add("bump");
   });
 }
-function refreshCamCnt(){ document.getElementById("cam-cnt").textContent = totalBob(); }
+function vincCount(){ const g=gA(); return g ? g.bobinas.length+(g.qManual||0) : 0; }
+function refreshCamCnt(){ document.getElementById("cam-cnt").textContent = vincCount(); }
 function render(){
-  document.getElementById("ct-num").textContent = totalBob();
+  document.getElementById("ct-num").textContent = vincCount();
   document.getElementById("ct-dup").textContent = dups;
-  const g = gA();
-  document.getElementById("ct-vinc").textContent = g
-    ? "neste vínculo: " + (g.bobinas.length+(g.qManual||0)) + (g.qManual? " ("+g.qManual+" informadas)" : "")
-    : "—";
   refreshCamCnt();
   const list = document.getElementById("scanlist");
   list.innerHTML = feedLog.length ? feedLog.map(f=>{
@@ -960,9 +920,15 @@ function updateFin(){
 function durMin(rec){
   return Math.max(1, Math.round((new Date(rec.fim)-new Date(rec.inicio))/60000));
 }
+let finExpandido = -1;
+function finToggle(i){ finExpandido = (finExpandido===i) ? -1 : i; renderFin(); }
 function goFin(){
   if(!totalBob()){ feedback("warn","Nada para finalizar",""); return; }
   closeCam();
+  renderFin();
+  go("scr-fin");
+}
+function renderFin(){
   const agora = new Date();
   const rec = { inicio:(inicio||agora).toISOString(), fim: agora.toISOString() };
   const nRom = grupos.filter(g=>g.tipo==="ROM").length;
@@ -970,28 +936,28 @@ function goFin(){
   document.getElementById("fin-body").innerHTML = `
     <div class="report">
       <h2>Finalizar conferência</h2>
-      <p style="font-size:12.5px;color:var(--muted)">Confira o resumo antes de gerar o relatório</p>
       <div class="total"><b>${totalBob()}</b><span>bobinas / pacotes</span></div>
       <div class="rmeta">
         <div><b>Operador:</b> ${operador || "não informado"}</div>
         <div><b>Duração:</b> ${durMin(rec)} min</div>
-        <div><b>Vínculos lidos:</b> ${grupos.length} (${nRom} romaneio${nRom!==1?"s":""} · ${nOP} OP${nOP!==1?"s":""})</div>
-        <div><b>Bobinas / pacotes:</b> ${totalBob()} (bipados ${totalLidas()} · informados ${totalMan()})</div>
+        <div><b>Quantidade de romaneios / OP's:</b> ${nRom} / ${nOP}</div>
+        <div><b>Bobinas / pacotes:</b> ${totalBob()} (lidos ${totalLidas()} + informados ${totalMan()})</div>
         ${dups?`<div><b>Leituras duplicadas ignoradas:</b> ${dups}</div>`:""}
       </div>
     </div>
     <div class="section-title">Vínculos e leituras</div>
-    ${grupos.map(g=>`
+    ${grupos.map((g,i)=>`
       <div class="hist-card">
-        <div class="hist-head">
+        <button class="hist-head" onclick="finToggle(${i})">
           <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
           <div class="grow">
             <div class="t">${g.cod}</div>
             <div class="d">${g.tipo==="ROM" ? (g.dados.cliente+" · "+g.dados.destino) : "Sem romaneio"}</div>
           </div>
           <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
-        </div>
-        <div class="hist-body">
+          <span class="chev ${finExpandido===i?"open":""}">▾</span>
+        </button>
+        <div class="hist-body ${finExpandido===i?"":"hidden"}">
           ${g.bobinas.map((b,j)=>`
             <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
             <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span></div>`).join("")}
@@ -1004,7 +970,6 @@ function goFin(){
       <button class="bigbtn b-op" style="min-height:68px;font-size:17px" onclick="confirmFin()">✓ CONFIRMAR E GERAR RELATÓRIO</button>
       <button class="bigbtn b-rom" style="min-height:56px;font-size:15px" onclick="go('scr-bob')">Voltar às leituras</button>
     </div>`;
-  go("scr-fin");
 }
 
 /* ============ CONFIRMAR → salva no histórico + relatório ============ */
@@ -1042,19 +1007,17 @@ function renderReport(rec){
     <div class="rmeta">
       <div><b>Operador:</b> ${rec.operador}</div>
       <div><b>Duração:</b> ${durMin(rec)} min</div>
-      <div><b>Romaneios lidos:</b> ${nRom.length} · <b>OPs lidas:</b> ${nOP.length}</div>
-      <div><b>Bobinas / pacotes:</b> ${totBob} (bipados ${totLid} · informados ${totBob-totLid})</div>
+      <div><b>Quantidade de romaneios / OP's:</b> ${nRom.length} / ${nOP.length}</div>
+      <div><b>Bobinas / pacotes:</b> ${totBob} (lidos ${totLid} + informados ${totBob-totLid})</div>
       <div><b>Leitura via:</b> ${rec.modo==="camera"?"Câmera":"Coletor de dados"}</div>
       ${rec.dups?`<div><b>Leituras duplicadas ignoradas:</b> ${rec.dups}</div>`:""}
     </div>
     ${rec.grupos.map(g=>`
-      <div class="section-title" style="margin:14px 0 6px">${g.tipo==="ROM"?"🧾 Romaneio":"⚙️ OP"}: ${g.cod}${g.dados&&g.dados.cliente&&g.dados.cliente!=="— (virá do ERP)" ? " · "+g.dados.cliente : ""} · ${g.bobinas.length+(g.qManual||0)} un</div>
-      ${g.dados&&g.tipo==="ROM"?`<div style="font-size:12px;color:var(--muted);margin:-2px 0 4px">${g.dados.destino} · ${g.dados.transp} · ${g.dados.motorista}</div>`:""}
+      <div class="section-title" style="margin:14px 0 6px">${g.tipo==="ROM"?"🧾 Romaneio":"⚙️ OP"}: ${g.cod}${g.dados&&g.dados.cliente&&g.dados.cliente!=="—" ? " · "+g.dados.cliente : ""} · ${g.bobinas.length+(g.qManual||0)} un</div>
       <table class="rtable"><tbody>
         ${g.bobinas.map((b,i)=>`<tr><td>${String(i+1).padStart(2,"0")} · ${b.cod}</td><td>${b.hora}</td></tr>`).join("")}
         ${(g.qManual||0)?`<tr><td>✎ Informado manualmente (sem bip)</td><td>+${g.qManual} un</td></tr>`:""}
-      </tbody></table>`).join("")}
-    <div class="signs"><div class="sign">Conferente${rec.operador&&rec.operador!=="não informado"?": "+rec.operador:""}</div><div class="sign">Motorista / Responsável</div></div>`;
+      </tbody></table>`).join("")}`;
 }
 
 /* ============ HISTÓRICO ============ */
@@ -1109,7 +1072,7 @@ function histReport(i){ renderReport(hist[i]); go("scr-rep"); }
 
 /* ============ NOVA CONFERÊNCIA ============ */
 function novaConf(){
-  grupos=[]; gAtual=-1; dups=0; seq=0; feedLog=[]; inicio=null; lastCode=""; camMode=null; mainExpandido=-1;
+  grupos=[]; gAtual=-1; dups=0; seq=0; feedLog=[]; inicio=null; lastCode=""; camMode=null; mainExpandido=-1; finExpandido=-1;
   render();
   go("scr-main");
 }
