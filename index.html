@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f2740">
+<meta name="mobile-web-app-capable" content="yes">
+<!-- ============ PWA ============ -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Conferência">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<title>Conferência de Bobinas e Romaneios</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#0f2740; --card:#ffffff; --ink:#17293d; --muted:#64748b;
+  --line:#e2e8f0; --brand:#0e6fdd; --brand2:#0b57a8;
+  --ok:#0e9f5d; --okbg:#e7f7ef; --warn:#c9760a; --warnbg:#fdf3e3;
+  --err:#d3352b; --errbg:#fdeceb;
+  --shadow:0 6px 24px rgba(10,30,55,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  background:#eef2f7;color:var(--ink);min-height:100vh;max-width:100vw;
+}
+button{font:inherit;cursor:pointer;border:none;background:none;-webkit-tap-highlight-color:transparent}
+input{font:inherit}
+.hidden{display:none!important}
+
+/* ============ TOPO ============ */
+.appbar{
+  position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;
+  padding:10px 12px;padding-top:max(10px, env(safe-area-inset-top));
+  background:linear-gradient(135deg,#0f2740,#0b1d31);color:#fff;max-width:100%;
+}
+.mode-switch{display:flex;background:#ffffff1a;border:1px solid #ffffff2e;border-radius:999px;padding:4px;gap:4px}
+.mode-switch button{
+  border-radius:999px;padding:10px 14px;font-size:13px;font-weight:800;color:#cfe0f2;
+  display:flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.mode-switch button.on{background:#fff;color:#17293d;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.mode-switch button:active{transform:scale(.97)}
+.appbar .spacer{flex:1;min-width:4px}
+.chip-user{
+  background:#ffffff22;border:1px solid #ffffff33;color:#fff;border-radius:999px;
+  padding:11px 14px;font-size:13px;font-weight:700;white-space:nowrap;
+  max-width:38vw;overflow:hidden;text-overflow:ellipsis;
+}
+body.camera .if-coletor{display:none!important}
+body.coletor .if-camera{display:none!important}
+
+main{max-width:560px;margin:0 auto;padding:14px 14px 120px;width:100%}
+section.screen{display:none}
+section.screen.active{display:block}
+
+.steps{display:flex;gap:8px;margin-bottom:14px}
+.step{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center;font-size:11.5px;color:var(--muted);font-weight:600}
+.step b{display:block;font-size:16px;margin-bottom:2px}
+
+/* card do vínculo atual */
+.status{
+  background:var(--card);border-radius:16px;box-shadow:var(--shadow);
+  padding:14px;display:flex;align-items:center;gap:12px;min-width:0;
+}
+.status .ico{width:44px;height:44px;flex:none;border-radius:12px;background:var(--okbg);display:flex;align-items:center;justify-content:center;font-size:22px}
+.status .ico.off{background:#eef2f7}
+.status .grow{flex:1;min-width:0}
+.status .t{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status .d{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-btn{flex:none;background:#eef2f7;color:var(--brand2);font-size:12.5px;font-weight:800;border-radius:10px;padding:10px 12px}
+.vbig{font-size:25px;font-weight:800;letter-spacing:.4px;line-height:1.15;word-break:break-all}
+
+/* botões gigantes */
+.bigbtns{display:grid;gap:12px;margin-top:14px}
+.bigbtn{
+  width:100%;min-height:96px;border-radius:18px;display:flex;align-items:center;justify-content:center;gap:14px;
+  font-size:19px;font-weight:800;color:#fff;padding:18px;text-align:center;line-height:1.2;user-select:none;
+  box-shadow:0 8px 20px rgba(10,30,55,.18);
+}
+.bigbtn:active{transform:scale(.98)}
+.bigbtn .bico{font-size:32px;flex:none}
+.bigbtn small{display:block;font-size:12px;font-weight:500;opacity:.9;margin-top:2px}
+.b-rom{background:linear-gradient(135deg,#31507c,#223b5e)}
+.b-bob{background:linear-gradient(135deg,var(--brand),var(--brand2))}
+.b-semrom{min-height:72px;font-size:16px;color:#31507c;background:#fff;border:2.5px dashed #b9c7d6;box-shadow:none}
+.b-semrom .bico{font-size:24px}
+.b-op{background:linear-gradient(135deg,#0e9f5d,#0b7a48)}
+.b-whats{background:linear-gradient(135deg,#25d366,#128c7e)}
+.b-qtd{min-height:72px;font-size:16px;color:#0b7a48;background:#fff;border:2.5px dashed #7cc7a3;box-shadow:none}
+.b-qtd .bico{font-size:24px}
+.b-hist{min-height:72px;font-size:16px;background:#fff;color:#31507c;border:2.5px solid #c3d2e2;box-shadow:none;justify-content:flex-start;text-align:left;padding:14px 16px}
+.b-hist .bico{font-size:24px}
+.b-hist .hcnt{margin-left:auto;background:var(--brand);color:#fff;border-radius:999px;min-width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;padding:0 8px;flex:none}
+.b-inst{min-height:64px;font-size:16px;background:linear-gradient(135deg,#31507c,#182f4c)}
+/* anti-cópia: só em telas de toque (celular/tablet); no PC a seleção continua livre */
+@media (pointer:coarse){
+  *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
+  input,textarea{-webkit-user-select:text!important;user-select:text!important}
+}
+
+/* contador */
+.counter{
+  margin-top:14px;background:var(--card);border-radius:16px;box-shadow:var(--shadow);
+  padding:18px;display:flex;align-items:center;gap:14px;
+}
+.counter .num{font-size:52px;font-weight:800;line-height:1;color:var(--ok);transition:transform .15s}
+.counter .num.bump{transform:scale(1.25)}
+.counter .lbl{font-size:14px;font-weight:700}
+.counter .lbl span{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-top:3px}
+.counter .dup{margin-left:auto;text-align:center;background:var(--warnbg);border-radius:12px;padding:10px 14px}
+.counter .dup b{display:block;font-size:22px;color:var(--warn)}
+.counter .dup span{font-size:11px;color:var(--warn)}
+
+/* coletor */
+.collector{margin-top:14px}
+.collector input{
+  width:100%;border:2px dashed #b9c7d6;border-radius:14px;background:#fbfdff;padding:16px;
+  font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-align:center;outline:none;
+}
+.collector input:focus{border-color:var(--brand);box-shadow:0 0 0 4px rgba(14,111,221,.15);background:#fff}
+.collector p{font-size:11.5px;color:var(--muted);text-align:center;margin-top:6px}
+/* campo do coletor: mesmo visual de antes, na altura do botão grande (96px) */
+.big-col{
+  width:100%;min-height:96px;border-radius:18px;padding:16px;
+  border:2px dashed #b9c7d6;background:#fbfdff;color:var(--ink);
+  font-size:17px;font-weight:800;letter-spacing:1px;
+  text-transform:uppercase;text-align:center;outline:none;
+}
+.big-col:focus{border-color:var(--brand);box-shadow:0 0 0 4px rgba(14,111,221,.15);background:#fff}
+.big-col::placeholder{color:#9aabbb;font-weight:800}
+
+
+.toggles{display:flex;gap:16px;justify-content:center;margin-top:14px;font-size:12.5px;color:var(--muted)}
+.toggles label{display:flex;align-items:center;gap:6px;user-select:none}
+.toggles input{width:18px;height:18px}
+
+.section-title{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:18px 4px 8px}
+.scanlist{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:6px 14px}
+.scan-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);min-width:0}
+.scan-row:last-child{border-bottom:none}
+.scan-row .n{width:26px;height:26px;flex:none;border-radius:8px;background:var(--okbg);color:var(--ok);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.scan-row .n.warn{background:var(--warnbg);color:var(--warn)}
+.scan-row .n.man{background:#e8efff;color:var(--brand2)}
+.scan-row .c{font-weight:800;font-size:14px;letter-spacing:.4px;word-break:break-all;flex:1;min-width:0}
+.scan-row .tag{font-size:10.5px;font-weight:800;text-transform:uppercase;white-space:nowrap}
+.scan-row .tag.ok{color:var(--ok)} .scan-row .tag.warn{color:var(--warn)} .scan-row .tag.man{color:var(--brand2)}
+.scan-row .h{font-size:11px;color:var(--muted);white-space:nowrap}
+.empty{padding:16px 4px;font-size:13px;color:var(--muted);text-align:center}
+
+.voltar{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--brand2);margin-bottom:10px}
+
+/* rodapé fixo */
+.footer-bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;
+  box-shadow:0 -6px 22px rgba(10,30,55,.14);padding:12px 14px;
+  padding-bottom:max(12px, env(safe-area-inset-bottom));
+}
+.footer-bar .fin{
+  width:100%;max-width:560px;margin:0 auto;display:block;min-height:64px;border-radius:16px;
+  background:var(--ok);color:#fff;font-size:18px;font-weight:800;
+}
+.footer-bar .fin:disabled{background:#b9c7d6}
+.footer-bar .fin.troc{background:#31507c}
+
+/* telas de entrada (OP / usuário / quantidade) */
+.entry{max-width:460px;margin:0 auto}
+.entry .card-e{background:#fff;border-radius:18px;box-shadow:var(--shadow);padding:24px 18px;text-align:center}
+.entry .eico{font-size:46px}
+.entry h2{font-size:19px;margin:8px 0 4px}
+.entry .hint{font-size:13.5px;color:var(--muted);line-height:1.5}
+.entry input{
+  width:100%;margin-top:16px;border:2px solid var(--brand);border-radius:14px;background:#fbfdff;
+  padding:16px;font-size:20px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+  text-align:center;outline:none;
+}
+.entry input:focus{box-shadow:0 0 0 4px rgba(14,111,221,.16);background:#fff}
+.user-ov{position:fixed;inset:0;z-index:120;background:#eef2f7;overflow-y:auto}
+#inp-qtd{font-size:32px;letter-spacing:4px;text-transform:none}
+
+/* ============ CÂMERA TELA CHEIA ============ */
+#cam{position:fixed;inset:0;z-index:100;background:#000;display:flex;flex-direction:column}
+#cam-reader, #cam-video{position:absolute;inset:0}
+#cam-video{width:100%;height:100%;object-fit:cover}
+#cam-reader video{position:absolute!important;inset:0;width:100%!important;height:100%!important;object-fit:cover}
+.cam-top{
+  position:relative;z-index:2;display:flex;align-items:center;gap:10px;padding:14px;
+  padding-top:max(14px, env(safe-area-inset-top));
+  background:linear-gradient(rgba(0,0,0,.65),transparent);color:#fff;
+}
+.cam-top .mode{font-size:15px;font-weight:800}
+.cam-top .cnt{margin-left:auto;background:#ffffff26;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:800;transition:transform .15s}
+.cam-top .cnt.bump{transform:scale(1.3)}
+.cam-frame{
+  position:absolute;z-index:2;left:50%;top:46%;transform:translate(-50%,-50%);
+  width:min(80vw,340px);height:170px;border-radius:14px;pointer-events:none;
+  box-shadow:0 0 0 200vmax rgba(0,0,0,.35);outline:3px solid rgba(255,255,255,.85);outline-offset:-1.5px;
+}
+.cam-frame::after{content:"";position:absolute;left:8%;right:8%;top:50%;height:2px;background:rgba(255,80,80,.9);box-shadow:0 0 8px rgba(255,60,60,.9);animation:sweep 2s ease-in-out infinite}
+@keyframes sweep{0%,100%{top:22%}50%{top:78%}}
+.cam-status{
+  position:absolute;z-index:3;left:50%;top:46%;transform:translate(-50%,-50%);
+  color:#fff;text-align:center;font-size:15px;font-weight:700;line-height:1.5;
+  display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:none;width:80vw;
+}
+.spin{width:34px;height:34px;border-radius:50%;border:4px solid #ffffff40;border-top-color:#fff;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cam-fallback{
+  position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;color:#fff;padding:30px;gap:10px;background:rgba(0,0,0,.6);
+}
+.cam-fallback .fico{font-size:52px}
+.cam-fallback b{font-size:17px}
+.cam-fallback p{font-size:13.5px;opacity:.9;line-height:1.55;max-width:320px}
+.cam-fallback .retry{
+  margin-top:8px;background:#fff;color:#17293d;font-weight:800;border-radius:14px;
+  padding:14px 22px;font-size:15px;min-width:240px;min-height:54px;
+}
+.cam-bottom{
+  margin-top:auto;position:relative;z-index:5;padding:16px;display:grid;gap:10px;
+  padding-bottom:max(16px, env(safe-area-inset-bottom));
+  background:linear-gradient(transparent,rgba(0,0,0,.8));
+}
+.cam-bottom .bigbtn{min-height:62px;font-size:16px;box-shadow:none}
+.b-close{background:#ffffff26;border:1px solid #ffffff40;backdrop-filter:blur(4px)}
+.b-simu{background:#fff;color:#17293d}
+
+/* ============ FLASH ============ */
+#flash{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .12s}
+#flash.show{opacity:1}
+#flash .box{color:#fff;text-align:center;padding:26px 30px;border-radius:22px;max-width:88vw;transform:scale(.9);transition:transform .12s}
+#flash.show .box{transform:scale(1)}
+#flash .big{font-size:58px;line-height:1}
+#flash .msg{font-size:19px;font-weight:800;margin-top:8px}
+#flash .code{font-size:14px;opacity:.92;margin-top:4px;font-weight:600;word-break:break-all}
+#flash.ok{background:rgba(14,159,93,.45)} #flash.ok .box{background:rgba(10,120,70,.94)}
+#flash.warn{background:rgba(216,127,10,.45)} #flash.warn .box{background:rgba(170,95,5,.95)}
+#flash.err{background:rgba(211,53,43,.45)} #flash.err .box{background:rgba(160,30,24,.95)}
+
+/* ============ HISTÓRICO / GRUPOS ============ */
+.hist-card{background:#fff;border-radius:16px;box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}
+.hist-head{width:100%;display:flex;align-items:center;gap:11px;padding:13px 14px;text-align:left}
+.hico{width:40px;height:40px;flex:none;border-radius:10px;background:var(--okbg);display:flex;align-items:center;justify-content:center;font-size:20px}
+.hico.op{background:#e8efff}
+.hist-head .grow{flex:1;min-width:0}
+.hist-head .t{font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-head .d{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbadge{background:var(--okbg);color:var(--ok);font-weight:800;border-radius:10px;padding:7px 11px;font-size:13px;flex:none}
+.chev{color:var(--muted);font-size:13px;flex:none;transition:transform .2s}
+.chev.open{transform:rotate(180deg)}
+.hist-body{border-top:1px solid var(--line);padding:6px 14px 12px;background:#f8fafc}
+.gline{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;color:var(--ink);padding:10px 0 4px;border-bottom:1.5px solid var(--line);margin-bottom:2px}
+.gline .gico{font-size:15px}
+.gline .gcnt{margin-left:auto;font-size:11.5px;color:var(--ok);background:var(--okbg);border-radius:8px;padding:4px 8px}
+.brow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.brow .bn{width:22px;height:22px;flex:none;border-radius:6px;background:#e2e8f0;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;color:#475569}
+.brow .bc{flex:1;min-width:0;font-weight:700;letter-spacing:.3px;word-break:break-all}
+.brow .bh{font-size:11px;color:var(--muted);white-space:nowrap}
+.brow.man .bc{color:var(--brand2)}
+.dups-line{font-size:11.5px;color:var(--warn);font-weight:700;padding-top:7px}
+.hist-actions{display:flex;gap:8px;margin-top:12px}
+.hist-actions button{flex:1;min-height:48px;border-radius:12px;font-size:13.5px;font-weight:800}
+.ha-rep{background:var(--brand);color:#fff}
+.ha-del{background:var(--errbg);color:var(--err)}
+/* botões de apagar */
+.b-del{background:linear-gradient(135deg,#e04a3f,#c22f25)}
+.del-b{width:34px;height:34px;flex:none;border-radius:9px;background:var(--errbg);color:var(--err);font-size:15px;display:flex;align-items:center;justify-content:center}
+.del-b:active{transform:scale(.92)}
+.brow .del-b{width:28px;height:28px;font-size:13px;border-radius:7px}
+
+/* ============ RELATÓRIO / FINALIZAR ============ */
+.report{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:20px 16px;overflow-wrap:break-word}
+.report h2{font-size:18px}
+.report .rmeta{display:grid;gap:5px;font-size:13.5px;margin:14px 0;color:#334155}
+.report .total{display:flex;align-items:center;gap:14px;background:var(--okbg);border-radius:14px;padding:14px;margin:6px 0 14px}
+.report .total b{font-size:34px;color:var(--ok);line-height:1}
+.report .total span{font-size:13px;font-weight:700;color:var(--ok)}
+.rtable{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.rtable thead{display:none}
+.rtable,.rtable tbody{display:block;width:100%}
+.rtable tr{display:flex;align-items:center;gap:10px;width:100%;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;padding:10px 12px}
+.rtable td{display:block;border:none;padding:0;min-width:0}
+.rtable td:first-child{flex:1;font-weight:800;letter-spacing:.4px;word-break:break-word}
+.rtable td:last-child{flex:none;white-space:nowrap;color:var(--muted);font-size:12px}
+
+/* planilha (relatório simplificado) */
+.stable{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+.stable th{background:#0f2740;color:#fff;text-align:left;padding:10px;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;border:1px solid #0f2740}
+.stable td{padding:10px;border:1px solid #cbd5e1;font-weight:600;word-break:break-word;background:#fff}
+.stable tbody tr:nth-child(even) td{background:#f1f5f9}
+.stable tfoot td{background:var(--okbg);font-weight:800}
+.stable .num{text-align:right;white-space:nowrap}
+.signs{display:grid;gap:26px;margin-top:36px}
+.sign{border-top:1.5px solid #94a3b8;text-align:center;font-size:12px;color:var(--muted);padding-top:6px}
+@media(min-width:700px){.signs{grid-template-columns:1fr 1fr;gap:30px}}
+
+@media print{
+  body{background:#fff}
+  .appbar,.footer-bar,#flash,#cam,.user-ov,.no-print{display:none!important}
+  main{padding:0;max-width:none}
+  .report{box-shadow:none;border-radius:0}
+}
+</style>
+</head>
+<body class="camera">
+
+<!-- ============ TOPO ============ -->
+<header class="appbar no-print">
+  <div class="mode-switch" role="tablist">
+    <button id="m-coletor" onclick="setModo('coletor')">⌨️ Coletor</button>
+    <button id="m-camera" onclick="setModo('camera')">📷 Câmera</button>
+  </div>
+  <div class="spacer"></div>
+  <button class="chip-user" id="chip-user" onclick="openUser()">👤 usuário</button>
+</header>
+
+<main>
+
+<!-- ============ TELA 1 · INÍCIO ============ -->
+<section id="scr-main" class="screen active">
+  <div class="bigbtns">
+    <button class="bigbtn b-rom if-camera" onclick="openCam('rom')">
+      <span class="bico">🧾</span>
+      <span>LER ROMANEIO</span>
+    </button>
+    <input id="inp-home" class="big-col if-coletor" inputmode="none" autocomplete="off" placeholder="⌨️ BIPE O ROMANEIO">
+    <button class="bigbtn b-semrom" onclick="goOP()">
+      <span class="bico">📦</span>
+      <span>LER BOBINAS SEM ROMANEIO</span>
+    </button>
+  </div>
+
+  <div id="main-vincs"></div>
+
+  <div class="toggles no-print">
+    <label><input type="checkbox" id="tg-som" checked> 🔊 Som</label>
+    <label><input type="checkbox" id="tg-vib" checked> 📳 Vibração</label>
+  </div>
+
+  <div class="bigbtns">
+    <button class="bigbtn b-hist" onclick="goHist()">
+      <span class="bico">📋</span>
+      <span>CONFERÊNCIAS REALIZADAS</span>
+      <span class="hcnt" id="hist-count">0</span>
+    </button>
+    <button class="bigbtn b-inst hidden" id="btn-install" onclick="installApp()">
+      <span class="bico">📲</span>
+      <span>INSTALAR APP</span>
+    </button>
+  </div>
+</section>
+
+<!-- ============ TELA 1B · INFORMAR OP ============ -->
+<section id="scr-op" class="screen">
+  <button class="voltar no-print" onclick="go('scr-main')">← voltar</button>
+  <div class="entry">
+    <div class="card-e">
+      <div class="eico">⚙️</div>
+      <h2>Informe o número da OP</h2>
+      <input id="inp-op" autocomplete="off" placeholder="OP-000000">
+      <div class="bigbtns">
+        <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="confirmOP()">✓ CONFIRMAR OP</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TELA 2 · LER BOBINAS ============ -->
+<section id="scr-bob" class="screen">
+  <button class="voltar no-print" onclick="go('scr-main')">← início</button>
+
+  <div class="status" id="vinc-card"></div>
+
+  <div class="bigbtns">
+    <input id="inp-bob" class="big-col if-coletor" inputmode="none" autocomplete="off" placeholder="⌨️ BIPE A BOBINA">
+    <button class="bigbtn b-bob if-camera" onclick="openCam('bob')">
+      <span class="bico">📦</span>
+      <span>LER BOBINA</span>
+    </button>
+    <button class="bigbtn b-qtd" onclick="openQtd()">
+      <span class="bico">🔢</span>
+      <span>INFORMAR QUANTIDADE</span>
+    </button>
+  </div>
+
+  <div class="counter">
+    <div class="num" id="ct-num">0</div>
+    <div class="lbl">bobinas<br>neste romaneio</div>
+  </div>
+
+  <div class="section-title">Últimas leituras</div>
+  <div class="scanlist" id="scanlist"><div class="empty">Nenhuma leitura ainda.</div></div>
+</section>
+
+<!-- ============ TELA 3 · FINALIZAR ============ -->
+<section id="scr-fin" class="screen">
+  <button class="voltar no-print" onclick="go('scr-bob')">← voltar às leituras</button>
+  <div id="fin-body"></div>
+</section>
+
+<!-- ============ TELA · CONFERÊNCIAS REALIZADAS ============ -->
+<section id="scr-hist" class="screen">
+  <button class="voltar no-print" onclick="go('scr-main')">← início</button>
+  <div class="status" style="margin-bottom:12px">
+    <div class="ico">📋</div>
+    <div class="grow">
+      <div class="t">Conferências realizadas</div>
+    </div>
+  </div>
+  <div id="hist-list"></div>
+</section>
+
+<!-- ============ RELATÓRIO ============ -->
+<section id="scr-rep" class="screen">
+  <div class="report" id="report"></div>
+  <div class="bigbtns no-print">
+    <button class="bigbtn b-op" style="min-height:64px;font-size:16px" onclick="openExp()">📊 Exportar planilha</button>
+    <button class="bigbtn b-bob" style="min-height:64px;font-size:16px" onclick="window.print()">🖨️ Imprimir / salvar PDF</button>
+    <button class="bigbtn b-rom" style="min-height:64px;font-size:16px" onclick="novaConf()">↩ Nova conferência</button>
+  </div>
+</section>
+
+</main>
+
+<!-- rodapé: na tela principal = FINALIZAR · na tela de bobinas = TROCAR vínculo -->
+<div class="footer-bar no-print hidden" id="footer">
+  <button class="fin" id="btn-fin" data-mode="fin" disabled onclick="foot()">✓ FINALIZAR CONFERÊNCIA</button>
+</div>
+
+<!-- ============ TELA DO USUÁRIO ============ -->
+<div id="user-ov" class="user-ov hidden" style="padding:14px">
+  <div class="entry">
+    <div class="card-e" style="margin-top:10px">
+      <div class="eico">👤</div>
+      <h2>Quem está operando?</h2>
+      <input id="inp-user" autocomplete="off" placeholder="Seu nome" style="text-transform:none;letter-spacing:.5px">
+      <div class="bigbtns">
+        <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="saveUser()">✓ SALVAR</button>
+        <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closeUser()">Voltar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA INFORMAR QUANTIDADE ============ -->
+<div id="qtd-ov" class="user-ov hidden" style="padding:14px">
+  <div class="entry">
+    <div class="card-e" style="margin-top:10px">
+      <div class="eico">🔢</div>
+      <h2>Informar quantidade</h2>
+      <input id="inp-qtd" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="0">
+      <div class="bigbtns">
+        <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="saveQtd()">✓ CONFIRMAR</button>
+        <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closeQtd()">Voltar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ EXPORTAR PLANILHA · OPÇÕES ============ -->
+<div id="exp-ov" class="user-ov hidden" style="padding:14px">
+  <div class="entry">
+    <div class="card-e" style="margin-top:10px">
+      <div class="eico">📊</div>
+      <h2>Exportar planilha</h2>
+      <div class="bigbtns">
+        <button class="bigbtn b-whats" style="min-height:64px;font-size:16px" onclick="shareWhats()">🟢 COMPARTILHAR NO WHATSAPP</button>
+        <button class="bigbtn b-bob" style="min-height:64px;font-size:16px" onclick="downloadCSV()">⬇️ BAIXAR NO DISPOSITIVO</button>
+        <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closeExp()">Voltar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ INSTALAR NO IPHONE ============ -->
+<div id="ios-ov" class="user-ov hidden" style="padding:14px">
+  <div class="entry">
+    <div class="card-e" style="margin-top:10px">
+      <div class="eico">📲</div>
+      <h2>Instalar no iPhone</h2>
+      <div style="text-align:left;font-size:14px;font-weight:700;color:#334155;display:grid;gap:10px;margin:12px 4px 4px">
+        <div>1. Toque em <b>Compartilhar</b> (quadrado com seta ↑)</div>
+        <div>2. Role e toque em <b>"Adicionar à Tela de Início"</b></div>
+        <div>3. Toque em <b>Adicionar</b></div>
+      </div>
+      <div class="bigbtns">
+        <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closeIos()">Entendi</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONFIRMAR EXCLUSÃO ============ -->
+<div id="del-ov" class="user-ov hidden" style="padding:14px">
+  <div class="entry">
+    <div class="card-e" style="margin-top:10px">
+      <div class="eico">🗑️</div>
+      <h2 id="del-title">Apagar?</h2>
+      <p id="del-msg" style="font-size:14px;font-weight:700;color:var(--muted);margin:10px 0 2px;word-break:break-word"></p>
+      <div class="bigbtns">
+        <button class="bigbtn b-del" style="min-height:64px;font-size:17px" onclick="confYes()">🗑️ APAGAR</button>
+        <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closeConf()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CÂMERA TELA CHEIA ============ -->
+<div id="cam" class="hidden">
+  <video id="cam-video" playsinline webkit-playsinline muted autoplay></video>
+  <div id="cam-reader"></div>
+  <div class="cam-top">
+    <div class="mode" id="cam-mode">📦 Lendo bobinas</div>
+    <div class="cnt" id="cam-cnt">0</div>
+  </div>
+  <div class="cam-frame"></div>
+  <div class="cam-status" id="cam-status"><div class="spin"></div><span id="cam-status-txt">Iniciando câmera…</span></div>
+  <div class="cam-bottom">
+    <button class="bigbtn b-close" onclick="closeCam()">✕ Fechar câmera</button>
+  </div>
+</div>
+
+<!-- ============ FLASH ============ -->
+<div id="flash"><div class="box"><div class="big" id="flash-ico">✓</div><div class="msg" id="flash-msg"></div><div class="code" id="flash-code"></div></div></div>
+
+<script>
+/* ============ MOCK: dados do romaneio (viriam do ERP) ============ */
+const ROMANEIOS = {
+ "ROM-2026-058412":{ cliente:"Embalagens Vale S.A.", destino:"Guarulhos / SP", transp:"RotaForte Transp.", motorista:"J. Pereira · FZK-4A21" },
+ "ROM-2026-058413":{ cliente:"Filmes Alfa Ltda.", destino:"S. José dos Campos / SP", transp:"TransCarga", motorista:"M. Souza · BRA-2E19" }
+};
+
+/* ============ ESTADO ============ */
+let modo = "camera";
+let operador = "";
+/* Conferência pode ter VÁRIOS vínculos — romaneios e/ou OPs.
+   Cada grupo guarda suas próprias bobinas. */
+let grupos = [];        // {tipo:'ROM'|'OP', cod, dados|null, bobinas:[{cod,hora}], qManual:0}
+let gAtual = -1;        // índice do vínculo apontado agora
+let dups = 0, seq = 0, inicio = null;
+
+/* ============ PERSISTÊNCIA (localStorage) ============ */
+const STATE_KEY = "confere_state_v1";
+function saveState(){
+  try{
+    localStorage.setItem(STATE_KEY, JSON.stringify({
+      grupos, gAtual, dups, seq,
+      inicio: inicio ? inicio.toISOString() : null,
+      operador, modo
+    }));
+  }catch(e){}
+}
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STATE_KEY));
+    if(!s) return;
+    grupos  = s.grupos  || [];
+    gAtual  = (s.gAtual!=null) ? s.gAtual : (grupos.length?grupos.length-1:-1);
+    dups    = s.dups || 0;
+    seq     = s.seq  || 0;
+    inicio  = s.inicio ? new Date(s.inicio) : null;
+    operador = s.operador || "";
+    if(s.modo) setModo(s.modo);
+  }catch(e){}
+}
+function clearState(){ try{ localStorage.removeItem(STATE_KEY); }catch(e){} }
+
+let camMode = null, wakeLock = null, lastCode = "", lastT = 0;
+let camStream = null, detTimer = null, detecting = false;
+let html5 = null, camCheck = null;
+
+/* helpers */
+function gA(){ return gAtual>=0 ? grupos[gAtual] : null; }
+function totalBob(){ return grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0); }
+function totalLidas(){ return grupos.reduce((a,g)=>a+g.bobinas.length,0); }
+function totalMan(){ return grupos.reduce((a,g)=>a+(g.qManual||0),0); }
+function horaAgora(){ return new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}); }
+
+/* ============ HISTÓRICO (localStorage) ============ */
+let hist = [];
+const HIST_KEY = "confere_hist_v2";
+function loadHist(){
+  try{ hist = JSON.parse(localStorage.getItem(HIST_KEY)) || []; }catch(e){ hist = []; }
+  /* limpa uma vez os registros de demonstração antigos (Maria Silva) */
+  const demo = ["ROM-2026-058401","ROM-2026-058390","OP-445501"];
+  const limpo = hist.filter(h => !(h.operador==="Maria Silva" && h.grupos && h.grupos.length &&
+                                   h.grupos.every(g=>demo.includes(g.cod))));
+  if(limpo.length !== hist.length){ hist = limpo; saveHistLS(); }
+}
+function saveHistLS(){ try{ localStorage.setItem(HIST_KEY, JSON.stringify(hist)); }catch(e){} updateHistBadge(); }
+function updateHistBadge(){ document.getElementById("hist-count").textContent = hist.length; }
+/* ============ MODO (câmera × coletor) ============ */
+function setModo(m){
+  if(m===modo) return;
+  modo = m;
+  document.body.classList.toggle("camera", m==="camera");
+  document.body.classList.toggle("coletor", m==="coletor");
+  document.getElementById("m-camera").classList.toggle("on", m==="camera");
+  document.getElementById("m-coletor").classList.toggle("on", m==="coletor");
+  if(m!=="camera") closeCam();
+  saveState();
+  focusCollector();
+}
+
+/* ============ USUÁRIO ============ */
+function renderUser(){ document.getElementById("chip-user").textContent = "👤 " + (operador || "usuário"); }
+function openUser(){
+  document.getElementById("inp-user").value = operador;
+  document.getElementById("user-ov").classList.remove("hidden");
+  setTimeout(()=>document.getElementById("inp-user").focus(),150);
+}
+function closeUser(){ document.getElementById("user-ov").classList.add("hidden"); }
+function saveUser(){
+  const v = document.getElementById("inp-user").value.trim().replace(/\s+/g," ");
+  if(!v){ feedback("warn","Informe um nome",""); return; }
+  operador = v; renderUser(); closeUser(); saveState();
+  feedback("ok","Operador definido", v);
+}
+document.getElementById("inp-user").addEventListener("keydown",e=>{ if(e.key==="Enter") saveUser(); });
+
+/* ============ NAVEGAÇÃO ============ */
+function go(id){
+  document.querySelectorAll("section.screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  const ft = document.getElementById("footer"), btn = document.getElementById("btn-fin");
+  /* rodapé: tela principal = FINALIZAR · tela de bobinas = TROCAR vínculo */
+  if(id==="scr-main"){
+    btn.dataset.mode = "fin";
+    btn.textContent = "✓ FINALIZAR CONFERÊNCIA";
+    btn.classList.remove("troc");
+    btn.disabled = totalBob()===0;
+    ft.classList.remove("hidden");
+  } else if(id==="scr-bob"){
+    btn.dataset.mode = "trocar";
+    btn.textContent = "Fechar";
+    btn.classList.add("troc");
+    btn.disabled = false;
+    ft.classList.remove("hidden");
+  } else {
+    ft.classList.add("hidden");
+  }
+  if(id==="scr-main") renderMainVincs();
+  window.scrollTo(0,0);
+  if(id==="scr-op") setTimeout(()=>document.getElementById("inp-op").focus(),200);
+  focusCollector();
+}
+function foot(){
+  if(document.getElementById("btn-fin").dataset.mode==="fin") goFin();
+  else go("scr-main");           // "trocar" = volta pra principal e lê outro romaneio/OP
+}
+function goOP(){ go("scr-op"); }
+
+/* ============ OP ============ */
+function confirmOP(){
+  const v = document.getElementById("inp-op").value.trim().toUpperCase();
+  if(!v){ feedback("warn","Informe o número da OP",""); return; }
+  onOP(v);
+}
+document.getElementById("inp-op").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){ const v=e.target.value.trim().toUpperCase(); if(v) onOP(v); }
+});
+function onOP(code){
+  addVinculo("OP", code, null);
+  document.getElementById("inp-op").value = "";
+  closeCam(); go("scr-bob");          // NÃO abre câmera — abre só no botão LER BOBINA
+}
+
+/* ============ VÍNCULOS (romaneio ou OP) ============ */
+function addVinculo(tipo, code, dados){
+  if(!inicio) inicio = new Date();
+  let g = grupos.find(x=>x.tipo===tipo && x.cod===code);
+  if(g){
+    gAtual = grupos.indexOf(g);
+    renderVincCard();
+    feedback("warn", (tipo==="ROM"?"Romaneio já lido":"OP já lida"), "seguindo com este vínculo");
+  } else {
+    grupos.push({ tipo, cod:code, dados, bobinas:[], qManual:0 });
+    gAtual = grupos.length-1;
+    renderVincCard();
+    feedback("ok", (tipo==="ROM"?"Romaneio aberto":"OP vinculada"), code);
+  }
+  render();
+}
+
+function onRomaneio(code){
+  // qualquer código de barras lido aqui é o romaneio; dados viriam do ERP (mock)
+  const d = ROMANEIOS[code] || { cliente:"—", destino:"—", transp:"—", motorista:"—" };
+  addVinculo("ROM", code, d);
+  closeCam(); go("scr-bob");          // NÃO abre câmera automática
+}
+
+function onBobina(code){
+  const g = gA();
+  if(!g){ feedback("warn","Leia o romaneio primeiro","ou informe uma OP"); return; }
+  if(!inicio) inicio = new Date();
+  const hora = horaAgora();
+  // duplicidade considera a conferência inteira (todos os vínculos)
+  const dono = grupos.find(x=>x.bobinas.some(b=>b.cod===code));
+  if(dono){
+    dups++;
+    feedback("warn","Duplicada!", code + (dono!==g ? " — já lida em "+dono.cod : " já foi lida"));
+  } else {
+    seq++;
+    g.bobinas.push({cod:code,hora});
+    feedback("ok","✓ Bobina conferida", code+" → "+g.cod);
+    bump();
+  }
+  render();
+}
+
+/* ============ INFORMAR QUANTIDADE (sem bip) ============ */
+function openQtd(){
+  if(!gA()){ feedback("warn","Leia o romaneio primeiro","ou informe uma OP"); return; }
+  document.getElementById("inp-qtd").value = "";
+  document.getElementById("qtd-ov").classList.remove("hidden");
+  setTimeout(()=>document.getElementById("inp-qtd").focus(),150);   // abre teclado numérico
+}
+function closeQtd(){ document.getElementById("qtd-ov").classList.add("hidden"); focusCollector(); }
+function saveQtd(){
+  const g = gA(); if(!g){ closeQtd(); return; }
+  const v = parseInt(document.getElementById("inp-qtd").value, 10);
+  if(!v || v<1 || v>9999){ feedback("warn","Quantidade inválida","digite um número maior que zero"); return; }
+  g.qManual = (g.qManual||0) + v;
+  if(!inicio) inicio = new Date();
+  feedback("ok","✓ +"+v+" unidade"+(v>1?"s":""), "somada manualmente em "+g.cod);
+  bump(); closeQtd(); render();
+}
+document.getElementById("inp-qtd").addEventListener("keydown",e=>{ if(e.key==="Enter") saveQtd(); });
+
+/* ============ APAGAR BOBINAS / VÍNCULO INTEIRO ============ */
+let confCb = null;
+function askConfirm(titulo, msg, cb){
+  document.getElementById("del-title").textContent = titulo;
+  document.getElementById("del-msg").textContent = msg;
+  confCb = cb;
+  document.getElementById("del-ov").classList.remove("hidden");
+}
+function closeConf(){ confCb = null; document.getElementById("del-ov").classList.add("hidden"); focusCollector(); }
+function confYes(){ const cb = confCb; closeConf(); if(cb) cb(); }
+function refreshScreens(){
+  if(document.getElementById("scr-main").classList.contains("active")) renderMainVincs();
+  if(document.getElementById("scr-fin").classList.contains("active")){
+    if(!totalBob()) go("scr-main");   // apagou tudo → volta ao início
+    else renderFin();
+  }
+}
+function delBobina(gi, bi){
+  const g = grupos[gi]; if(!g || !g.bobinas[bi]) return;
+  const cod = g.bobinas[bi].cod;
+  askConfirm("Apagar bobina?", cod, ()=>{
+    g.bobinas.splice(bi,1);
+    feedback("warn","🗑️ Bobina apagada", cod);
+    render(); refreshScreens();
+  });
+}
+function delManual(gi){
+  const g = grupos[gi]; if(!g || !(g.qManual>0)) return;
+  askConfirm("Apagar quantidade informada?", "+"+g.qManual+" un em "+g.cod, ()=>{
+    g.qManual = 0;
+    render(); refreshScreens();
+  });
+}
+function delVinculo(gi){
+  const g = grupos[gi]; if(!g) return;
+  const n = g.bobinas.length + (g.qManual||0);
+  askConfirm("Apagar "+(g.tipo==="ROM"?"romaneio":"OP")+" inteiro?",
+             g.cod + " · " + n + " bobina" + (n===1?"":"s"), ()=>{
+    grupos.splice(gi,1);
+    if(gAtual===gi) gAtual = -1;
+    else if(gAtual>gi) gAtual--;
+    if(mainExpandido===gi) mainExpandido = -1;
+    else if(mainExpandido>gi) mainExpandido--;
+    finExpandido = -1;
+    feedback("warn","🗑️ Vínculo apagado", g.cod);
+    render(); renderMainVincs(); refreshScreens();
+  });
+}
+
+/* ============ CÂMERA ============ */
+function camEl(){ return document.getElementById("cam"); }
+function timeoutP(ms){ return new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), ms)); }
+
+async function openCam(mode){
+  if(modo!=="camera"){
+    feedback("warn","Câmera desativada","Modo coletor ativo no topo");
+    focusCollector(); return;
+  }
+  camMode = mode;
+  camEl().classList.remove("hidden");
+  document.querySelectorAll(".cam-fallback").forEach(e=>e.remove());
+  document.getElementById("cam-mode").textContent =
+    mode==="rom" ? "1 · Aponte para o ROMANEIO" :
+    mode==="op"  ? "⚙️ Aponte para a OP" : "2 · Lendo BOBINAS (contínuo)";
+  refreshCamCnt();
+  showStatus(true, "Iniciando câmera…");
+  try{ wakeLock = await navigator.wakeLock?.request("screen"); }catch(e){}
+  if("BarcodeDetector" in window && navigator.mediaDevices?.getUserMedia) startNativeCam();
+  else startLibCam({facingMode:"environment"});
+}
+async function startNativeCam(){
+  stopStreams();
+  document.getElementById("cam-video").classList.remove("hidden");
+  try{
+    camStream = await Promise.race([
+      navigator.mediaDevices.getUserMedia({
+        video:{ facingMode:{ideal:"environment"}, width:{ideal:1280}, height:{ideal:720} },
+        audio:false
+      }),
+      timeoutP(10000)
+    ]);
+    const v = document.getElementById("cam-video");
+    v.srcObject = camStream;
+    await v.play();
+    showStatus(false);
+    let det;
+    try{ det = new BarcodeDetector({formats:["code_128","code_39","code_93","ean_13","ean_8","upc_a","upc_e","itf","codabar","qr_code","data_matrix"]}); }
+    catch(e){ det = new BarcodeDetector(); }
+    detectLoop(det, v);
+  }catch(e){ stopStreams(); camFail(e); }
+}
+async function detectLoop(det, v){
+  if(!camStream) return;
+  if(!detecting){
+    detecting = true;
+    try{
+      const codes = await det.detect(v);
+      if(codes && codes.length) onCode(codes[0].rawValue);
+    }catch(e){}
+    detecting = false;
+  }
+  detTimer = setTimeout(()=>detectLoop(det, v), 200);
+}
+function stopStreams(){
+  clearTimeout(detTimer);
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  const v = document.getElementById("cam-video");
+  try{ v.pause(); }catch(e){} v.srcObject = null;
+}
+async function startLibCam(constraint){
+  stopStreams(); stopLib();
+  if(!window.Html5Qrcode){ camFail(new Error("sem-suporte")); return; }
+  document.getElementById("cam-video").classList.add("hidden");
+  try{
+    html5 = new Html5Qrcode("cam-reader");
+    await Promise.race([
+      html5.start(constraint,
+        { fps:12, qrbox:(w,h)=>({ width:Math.min(w*0.9,340), height:170 }) },
+        (decoded)=>{ onCode(decoded); }, ()=>{}),
+      timeoutP(9000)
+    ]);
+    showStatus(false);
+    clearTimeout(camCheck);
+    camCheck = setTimeout(()=>{
+      const v = document.querySelector("#cam-reader video");
+      if(!v || !v.videoWidth){ stopLib(); camFail(new Error("sem-imagem")); }
+    }, 2500);
+  }catch(e){
+    if(constraint && constraint.facingMode) startLibCam(true);
+    else { stopLib(); camFail(e); }
+  }
+}
+async function stopLib(){
+  clearTimeout(camCheck);
+  if(html5){ try{ await html5.stop(); }catch(e){} try{ html5.clear(); }catch(e){} html5=null; }
+}
+function showStatus(on, txt){
+  const s = document.getElementById("cam-status");
+  s.style.display = on ? "flex" : "none";
+  if(txt) document.getElementById("cam-status-txt").textContent = txt;
+}
+function camFail(e){
+  showStatus(false); stopStreams(); stopLib();
+  if(document.querySelector(".cam-fallback")) return;
+  const name = (e && (e.name||e.message)) || "";
+  let titulo = "Não consegui abrir a câmera", extra = "";
+  if(name==="NotAllowedError"){ titulo="Permissão de câmera negada";
+    extra="Toque no cadeado 🔒 da barra de endereço e libere a câmera, depois tente de novo."; }
+  else if(name==="NotFoundError"||name==="OverconstrainedError"){ titulo="Câmera não encontrada";
+    extra="Este dispositivo não informou uma câmera disponível (comum em PCs e pré-visualizações)."; }
+  else if(name==="NotReadableError"){ titulo="Câmera em uso";
+    extra="Feche outros apps que estejam usando a câmera e tente novamente."; }
+  else if(name==="SecurityError"||name==="sem-suporte"||(location.protocol!=="https:"&&location.hostname!=="localhost")){
+    extra="A câmera só funciona em HTTPS (ex.: GitHub Pages) ou localhost — não por arquivo aberto direto."; }
+  const el = document.createElement("div");
+  el.className = "cam-fallback";
+  el.innerHTML = `
+    <div class="fico">📷</div>
+    <b>${titulo}</b>
+    <p>${extra}</p>
+    <button class="retry" onclick="retryCam()">↻ Tentar novamente</button>`;
+  camEl().appendChild(el);
+}
+function retryCam(){
+  document.querySelectorAll(".cam-fallback").forEach(e=>e.remove());
+  showStatus(true, "Iniciando câmera…");
+  if("BarcodeDetector" in window && navigator.mediaDevices?.getUserMedia) startNativeCam();
+  else startLibCam({facingMode:"environment"});
+}
+async function closeCam(){
+  camMode = null;
+  stopStreams(); await stopLib();
+  showStatus(false);
+  camEl().classList.add("hidden");
+  document.querySelectorAll(".cam-fallback").forEach(e=>e.remove());
+  try{ wakeLock?.release(); }catch(e){} wakeLock=null;
+  focusCollector();
+}
+
+/* ============ ROTEAMENTO DOS CÓDIGOS (por contexto) ============ */
+function onCode(raw){
+  const code = (raw||"").trim().toUpperCase();
+  if(!code) return;
+  const now = Date.now();
+  if(code===lastCode && now-lastT<1200) return;
+  lastCode = code; lastT = now;
+
+  const camAberta = !document.getElementById("cam").classList.contains("hidden");
+  if(camAberta){
+    if(camMode==="rom"){ onRomaneio(code); return; }
+    if(camMode==="op"){ onOP(code); return; }
+    onBobina(code); return;
+  }
+  if(document.getElementById("scr-op").classList.contains("active")){ onOP(code); return; }
+  if(document.getElementById("scr-bob").classList.contains("active")){ onBobina(code); return; }
+  onRomaneio(code);
+}
+
+/* ============ COLETOR DE DADOS ============
+   O coletor "cola" o código e não envia Enter →
+   processamos automaticamente quando a digitação para (varredura rápida). */
+let colTimer = null;
+function autoSubmit(inp){
+  clearTimeout(colTimer);
+  colTimer = setTimeout(()=>{
+    const v = inp.value.trim();
+    if(v){ onCode(v); inp.value = ""; }
+  }, 200);
+}
+["inp-home","inp-bob"].forEach(id=>{
+  const inp = document.getElementById(id);
+  inp.addEventListener("keydown", e=>{
+    if(e.key==="Enter"){ clearTimeout(colTimer); onCode(inp.value); inp.value=""; }
+  });
+  inp.addEventListener("input", ()=>autoSubmit(inp));          // coletor sem Enter
+  inp.addEventListener("paste", ()=>setTimeout(()=>{           // colagem direta
+    const v = inp.value.trim();
+    if(v){ clearTimeout(colTimer); onCode(v); inp.value=""; }
+  }, 40));
+  inp.addEventListener("blur",()=>setTimeout(focusCollector,400));
+});
+function focusCollector(){
+  if(modo!=="coletor") return;
+  if(!document.getElementById("cam").classList.contains("hidden")) return;
+  /* não rouba o foco/teclado quando uma tela de digitação está aberta */
+  if(!document.getElementById("user-ov").classList.contains("hidden")) return;
+  if(!document.getElementById("qtd-ov").classList.contains("hidden")) return;
+  if(!document.getElementById("exp-ov").classList.contains("hidden")) return;
+  if(!document.getElementById("del-ov").classList.contains("hidden")) return;
+  if(!document.getElementById("ios-ov").classList.contains("hidden")) return;
+  if(document.getElementById("scr-op").classList.contains("active")) return;
+  if(document.getElementById("scr-fin").classList.contains("active")) return;
+  /* se já existe outro input com foco, não interrompe a digitação */
+  const ae = document.activeElement;
+  if(ae && ae.tagName==="INPUT" && ae.id!=="inp-home" && ae.id!=="inp-bob") return;
+  const id = document.getElementById("scr-bob").classList.contains("active") ? "inp-bob" :
+             document.getElementById("scr-main").classList.contains("active") ? "inp-home" : null;
+  if(id) document.getElementById(id).focus();
+}
+
+/* ============ RENDER ============ */
+function renderVincCard(){
+  const card = document.getElementById("vinc-card");
+  const g = gA();
+  if(g && g.tipo==="ROM"){
+    card.innerHTML = `
+      <div class="grow" style="text-align:center">
+        <div class="d" style="font-weight:700;color:var(--muted);font-size:11px;letter-spacing:.6px">ROMANEIO</div>
+        <div class="vbig">${g.cod}</div>
+        <div class="d">${g.dados.cliente} · ${g.dados.destino}</div>
+      </div>`;
+  } else if(g){
+    card.innerHTML = `
+      <div class="grow" style="text-align:center">
+        <div class="d" style="font-weight:700;color:var(--muted);font-size:11px;letter-spacing:.6px">OP · SEM ROMANEIO</div>
+        <div class="vbig">${g.cod}</div>
+        <div class="d">Bobinas vinculadas a esta OP</div>
+      </div>`;
+  } else {
+    card.innerHTML = `
+      <div class="ico off">🧾</div>
+      <div class="grow">
+        <div class="t">Nenhum vínculo</div>
+        <div class="d">Leia um romaneio ou informe uma OP</div>
+      </div>`;
+  }
+}
+
+/* ============ VÍNCULOS LIDOS (expandível) NA TELA PRINCIPAL ============ */
+let mainExpandido = -1;
+function renderMainVincs(){
+  const box = document.getElementById("main-vincs");
+  if(!grupos.length){ box.innerHTML = ""; return; }
+  box.innerHTML = `
+    <div class="section-title">Nesta conferência (${grupos.length} vínculo${grupos.length>1?"s":""} · ${totalBob()} bobina${totalBob()>1?"s":""})</div>
+    ${grupos.map((g,i)=>`
+      <div class="hist-card">
+        <button class="hist-head" onclick="mainToggle(${i})">
+          <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
+          <div class="grow">
+            <div class="t">${g.cod}</div>
+            <div class="d">${g.tipo==="ROM" ? g.dados.cliente+" · "+g.dados.destino : "Sem romaneio"}</div>
+          </div>
+          <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
+          <span class="chev ${mainExpandido===i?"open":""}" id="mv-chev-${i}">▾</span>
+        </button>
+        <div class="hist-body ${mainExpandido===i?"":"hidden"}" id="mv-body-${i}">
+          ${g.bobinas.map((b,j)=>`
+            <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
+            <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span>
+            <button class="del-b" onclick="delBobina(${i},${j})" title="Apagar">🗑️</button></div>`).join("")}
+          ${(g.qManual||0) ? `<div class="brow man"><span class="bn">✎</span>
+            <span class="bc">Informado manualmente (sem bip)</span><span class="bh">+${g.qManual}</span>
+            <button class="del-b" onclick="delManual(${i})" title="Apagar">🗑️</button></div>` : ""}
+          ${!g.bobinas.length && !(g.qManual||0) ? '<div class="empty">Sem leituras neste vínculo ainda.</div>' : ""}
+          <div class="hist-actions">
+            <button class="ha-rep" onclick="selecionarVinc(${i})">📦 Ler bobinas aqui</button>
+            <button class="ha-del" onclick="delVinculo(${i})">🗑️ Apagar ${g.tipo==="ROM"?"romaneio":"OP"}</button>
+          </div>
+        </div>
+      </div>`).join("")}`;
+}
+function mainToggle(i){
+  mainExpandido = (mainExpandido===i) ? -1 : i;
+  renderMainVincs();
+}
+function selecionarVinc(i){
+  gAtual = i;
+  renderVincCard();
+  go("scr-bob");
+}
+function bump(){
+  ["ct-num","cam-cnt"].forEach(id=>{
+    const e=document.getElementById(id); e.classList.remove("bump"); void e.offsetWidth; e.classList.add("bump");
+  });
+}
+function vincCount(){ const g=gA(); return g ? g.bobinas.length+(g.qManual||0) : 0; }
+function refreshCamCnt(){ document.getElementById("cam-cnt").textContent = vincCount(); }
+function render(){
+  document.getElementById("ct-num").textContent = vincCount();
+  refreshCamCnt();
+  /* Últimas leituras: só bobinas do vínculo aberto no momento */
+  const g = gA();
+  const list = document.getElementById("scanlist");
+  const ult = g ? g.bobinas.slice(-30).reverse() : [];
+  list.innerHTML = ult.length ? ult.map((b,j)=>`
+      <div class="scan-row">
+        <div class="n">${String(g.bobinas.length-j).padStart(2,"0")}</div>
+        <div class="c">${b.cod}</div>
+        <div class="h">${b.hora}</div>
+        <button class="del-b no-print" onclick="delBobina(${gAtual},${g.bobinas.length-1-j})" title="Apagar">🗑️</button>
+      </div>`).join("") : '<div class="empty">Nenhuma leitura ainda.</div>';
+  renderVincCard();
+  updateFin();
+  saveState();                 // tudo fica salvo no localStorage automaticamente
+}
+function updateFin(){
+  const btn = document.getElementById("btn-fin");
+  if(btn.dataset.mode==="fin") btn.disabled = totalBob()===0;   // trocar nunca fica desabilitado
+}
+
+/* ============ TELA DE FINALIZAR ============ */
+function durMin(rec){
+  return Math.max(1, Math.round((new Date(rec.fim)-new Date(rec.inicio))/60000));
+}
+let finExpandido = -1;
+function finToggle(i){ finExpandido = (finExpandido===i) ? -1 : i; renderFin(); }
+function goFin(){
+  if(!totalBob()){ feedback("warn","Nada para finalizar",""); return; }
+  closeCam();
+  renderFin();
+  go("scr-fin");
+}
+function renderFin(){
+  const nomeInput = document.getElementById("inp-nome-conf");
+  const nomeAtual = nomeInput ? nomeInput.value : "";
+  const agora = new Date();
+  const rec = { inicio:(inicio||agora).toISOString(), fim: agora.toISOString() };
+  const nRom = grupos.filter(g=>g.tipo==="ROM").length;
+  const nOP  = grupos.filter(g=>g.tipo==="OP").length;
+  document.getElementById("fin-body").innerHTML = `
+    <div class="report">
+      <h2>Finalizar conferência</h2>
+      <div class="total"><b>${totalBob()}</b><span>bobinas / pacotes</span></div>
+      <div class="rmeta">
+        <div><b>Operador:</b> ${operador || "não informado"}</div>
+        <div><b>Duração:</b> ${durMin(rec)} min</div>
+        <div><b>Quantidade de romaneios / OP's:</b> ${nRom} / ${nOP}</div>
+        <div><b>Bobinas / pacotes:</b> ${totalBob()} (lidos ${totalLidas()} + informados ${totalMan()})</div>
+      </div>
+    </div>
+    <div class="entry" style="max-width:none;margin-top:4px">
+      <input id="inp-nome-conf" autocomplete="off" placeholder="Nome da conferência (ex.: Romaneio do caminhão 123)" value="${nomeAtual.replace(/&/g,"&amp;").replace(/"/g,"&quot;")}" style="text-transform:none;letter-spacing:.5px;margin-top:0">
+    </div>
+    <div class="section-title">Vínculos e leituras</div>
+    ${grupos.map((g,i)=>`
+      <div class="hist-card">
+        <button class="hist-head" onclick="finToggle(${i})">
+          <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
+          <div class="grow">
+            <div class="t">${g.cod}</div>
+            <div class="d">${g.tipo==="ROM" ? (g.dados.cliente+" · "+g.dados.destino) : "Sem romaneio"}</div>
+          </div>
+          <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
+          <span class="chev ${finExpandido===i?"open":""}">▾</span>
+        </button>
+        <div class="hist-body ${finExpandido===i?"":"hidden"}">
+          ${g.bobinas.map((b,j)=>`
+            <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
+            <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span>
+            <button class="del-b no-print" onclick="delBobina(${i},${j})" title="Apagar">🗑️</button></div>`).join("")}
+          ${(g.qManual||0) ? `<div class="brow man"><span class="bn">✎</span>
+            <span class="bc">Informado manualmente (sem bip)</span><span class="bh">+${g.qManual}</span>
+            <button class="del-b no-print" onclick="delManual(${i})" title="Apagar">🗑️</button></div>` : ""}
+          ${!g.bobinas.length && !(g.qManual||0) ? '<div class="empty">Sem leituras neste vínculo.</div>' : ""}
+          <div class="hist-actions no-print">
+            <button class="ha-del" onclick="delVinculo(${i})">🗑️ Apagar ${g.tipo==="ROM"?"romaneio":"OP"} inteiro</button>
+          </div>
+        </div>
+      </div>`).join("")}
+    <div class="bigbtns no-print">
+      <button class="bigbtn b-op" style="min-height:68px;font-size:17px" onclick="confirmFin()">✓ CONFIRMAR E GERAR RELATÓRIO</button>
+      <button class="bigbtn b-rom" style="min-height:56px;font-size:15px" onclick="go('scr-bob')">Voltar às leituras</button>
+    </div>`;
+}
+
+/* ============ CONFIRMAR → salva no histórico + relatório ============ */
+function confirmFin(){
+  if(!totalBob()){ feedback("warn","Nada para finalizar",""); go("scr-main"); return; }
+  const fim = new Date();
+  const first = grupos[0];
+  const nomePadrao = first ? first.cod + (grupos.length>1 ? " +"+(grupos.length-1) : "") : "Conferência";
+  const nome = (document.getElementById("inp-nome-conf").value.trim() || nomePadrao);
+  const rec = {
+    id: fim.getTime(),
+    nome,
+    operador: operador || "não informado",
+    modo, dups,
+    inicio: (inicio||fim).toISOString(), fim: fim.toISOString(),
+    grupos: grupos.map(g=>({
+      tipo:g.tipo, cod:g.cod, dados:g.dados,
+      bobinas:g.bobinas.map(b=>({cod:b.cod,hora:b.hora})),
+      qManual:g.qManual||0
+    }))
+  };
+  hist.unshift(rec); saveHistLS();
+  renderReport(rec);
+  go("scr-rep");
+}
+
+/* ============ RELATÓRIO (final e reaberto do histórico) ============ */
+let lastRec = null;
+function renderReport(rec){
+  lastRec = rec;
+  const fim = new Date(rec.fim);
+  const nRom = rec.grupos.filter(g=>g.tipo==="ROM").length;
+  const nOP  = rec.grupos.filter(g=>g.tipo==="OP").length;
+  const totBob = rec.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
+  const totLid = rec.grupos.reduce((a,g)=>a+g.bobinas.length,0);
+  document.getElementById("report").innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div><h2>Relatório de Conferência${rec.nome?": "+rec.nome:""}</h2><p style="font-size:12px;color:var(--muted)">Gerado em ${fim.toLocaleString("pt-BR")}</p></div>
+      <span style="background:var(--okbg);color:var(--ok);font-size:13px;font-weight:800;border-radius:999px;padding:6px 12px">✓ CONCLUÍDO</span>
+    </div>
+    <div class="total"><b>${totBob}</b><span>bobinas / pacotes conferidos</span></div>
+    <div class="rmeta">
+      <div><b>Operador:</b> ${rec.operador}</div>
+      <div><b>Duração:</b> ${durMin(rec)} min</div>
+      <div><b>Quantidade de romaneios / OP's:</b> ${nRom} / ${nOP}</div>
+      <div><b>Bobinas / pacotes:</b> ${totBob} (lidos ${totLid} + informados ${totBob-totLid})</div>
+      <div><b>Leitura via:</b> ${rec.modo==="camera"?"Câmera":"Coletor de dados"}</div>
+    </div>
+    <table class="stable">
+      <thead><tr><th>Romaneio</th><th class="num" style="width:110px">QTD</th></tr></thead>
+      <tbody>
+        ${rec.grupos.map(g=>`
+          <tr><td>${g.tipo==="OP"?"OP ":""}${g.cod}</td>
+              <td class="num">${g.bobinas.length+(g.qManual||0)}</td></tr>`).join("")}
+      </tbody>
+      <tfoot><tr><td><b>TOTAL</b></td><td class="num"><b>${totBob}</b></td></tr></tfoot>
+    </table>`;
+}
+
+/* ============ EXPORTAR PLANILHA (CSV/Excel) ============ */
+function openExp(){ if(!lastRec) return; document.getElementById("exp-ov").classList.remove("hidden"); }
+function closeExp(){ document.getElementById("exp-ov").classList.add("hidden"); focusCollector(); }
+
+function buildCSV(){
+  const rec = lastRec;
+  const fim = new Date(rec.fim);
+  const nRom = rec.grupos.filter(g=>g.tipo==="ROM").length;
+  const nOP  = rec.grupos.filter(g=>g.tipo==="OP").length;
+  const totBob = rec.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
+  const totLid = rec.grupos.reduce((a,g)=>a+g.bobinas.length,0);
+  const rows = [
+    ["RELATÓRIO DE CONFERÊNCIA"],
+    ["Gerado em", fim.toLocaleString("pt-BR")],
+    ["Operador", rec.operador],
+    ["Duração (min)", durMin(rec)],
+    ["Quantidade de romaneios / OP's", nRom+" / "+nOP],
+    ["Bobinas / pacotes", totBob+" (lidos "+totLid+" + informados "+(totBob-totLid)+")"],
+    ["Leitura via", rec.modo==="camera"?"Câmera":"Coletor de dados"],
+    [],
+    ["Romaneio","QTD"],
+    ...rec.grupos.map(g=>[(g.tipo==="OP"?"OP ":"")+g.cod, g.bobinas.length+(g.qManual||0)]),
+    ["TOTAL", totBob]
+  ];
+  const csv = "\ufeffsep=;\n" + rows.map(r=>r.join(";")).join("\n");
+  const fname = "conferencia_" + fim.toISOString().slice(0,10) + "_" +
+                fim.toTimeString().slice(0,5).replace(":","") + ".csv";
+  return {csv, fname};
+}
+
+/* resumo em texto para o WhatsApp (quando não dá pra anexar o arquivo) */
+function resumoTexto(rec){
+  const fim = new Date(rec.fim);
+  const tot = rec.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
+  let t = "📋 *Conferência" + (rec.nome?" "+rec.nome:"") + "* — " + fim.toLocaleString("pt-BR") + "\n";
+  t += "Operador: " + rec.operador + "\n\n*Romaneio — QTD*\n";
+  rec.grupos.forEach(g=>{ t += (g.tipo==="OP"?"OP ":"") + g.cod + " — " + (g.bobinas.length+(g.qManual||0)) + "\n"; });
+  t += "\n*TOTAL: " + tot + " bobinas/pacotes*";
+  return t;
+}
+
+function downloadCSV(){
+  if(!lastRec) return;
+  const {csv, fname} = buildCSV();
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  closeExp();
+}
+
+async function shareWhats(){
+  if(!lastRec) return;
+  const {csv, fname} = buildCSV();
+  /* no celular: abre o compartilhamento nativo com o arquivo anexado (dá pra escolher o WhatsApp direto) */
+  try{
+    const file = new File([csv], fname, {type:"text/csv"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:"Conferência"});
+      closeExp(); return;
+    }
+  }catch(e){
+    if(e && e.name==="AbortError"){ closeExp(); return; }  // usuário cancelou
+  }
+  /* fallback: abre o WhatsApp direto com o resumo em texto */
+  window.open("https://wa.me/?text=" + encodeURIComponent(resumoTexto(lastRec)), "_blank");
+  closeExp();
+}
+
+/* ============ HISTÓRICO ============ */
+function goHist(){ renderHist(); go("scr-hist"); }
+function renderHist(){
+  const box = document.getElementById("hist-list");
+  if(!hist.length){
+    box.innerHTML = `<div style="background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:22px;text-align:center;color:var(--muted);font-size:13.5px">Nenhuma conferência finalizada ainda.</div>`;
+    return;
+  }
+  box.innerHTML = hist.map((h,i)=>{
+    const tot = h.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
+    const first = h.grupos[0];
+    const titulo = h.nome || (h.grupos.length>1 ? first.cod + " +" + (h.grupos.length-1) : first.cod);
+    const fimTxt = new Date(h.fim).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+    return `
+    <div class="hist-card">
+      <button class="hist-head" onclick="histToggle(${i})">
+        <div class="hico ${first.tipo==="ROM"?"":"op"}">${first.tipo==="ROM"?"🧾":"⚙️"}</div>
+        <div class="grow">
+          <div class="t">${titulo}</div>
+          <div class="d">${h.grupos.length} vínculo(s) · ${fimTxt} · ${h.operador}</div>
+        </div>
+        <span class="hbadge">${tot}</span>
+        <span class="chev" id="chev-${i}">▾</span>
+      </button>
+      <div class="hist-body hidden" id="hbody-${i}">
+        ${h.grupos.map(g=>`
+          <div class="gline"><span class="gico">${g.tipo==="ROM"?"🧾":"⚙️"}</span> ${g.cod}
+            <span class="gcnt">${g.bobinas.length+(g.qManual||0)} un</span></div>
+          ${g.bobinas.map((b,j)=>`
+            <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
+            <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span></div>`).join("")}
+          ${(g.qManual||0)?`<div class="brow man"><span class="bn">✎</span>
+            <span class="bc">Informado manualmente</span><span class="bh">+${g.qManual}</span></div>`:""}
+        `).join("")}
+        <div class="hist-actions">
+          <button class="ha-rep" onclick="histReport(${i})">📄 Ver relatório</button>
+          <button class="ha-del" onclick="histDel(${i})">🗑 Excluir</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+function histToggle(i){
+  document.getElementById("hbody-"+i).classList.toggle("hidden");
+  document.getElementById("chev-"+i).classList.toggle("open");
+}
+function histDel(i){ hist.splice(i,1); saveHistLS(); renderHist(); feedback("warn","Conferência excluída",""); }
+function histReport(i){ renderReport(hist[i]); go("scr-rep"); }
+
+/* ============ NOVA CONFERÊNCIA ============ */
+function novaConf(){
+  grupos=[]; gAtual=-1; dups=0; seq=0; inicio=null; lastCode=""; camMode=null; mainExpandido=-1; finExpandido=-1;
+  clearState();
+  render();
+  go("scr-main");
+}
+
+/* ============ FEEDBACK ============ */
+let flashTO=null, beepCtx=null;
+function feedback(tipo,msg,code){
+  const fl=document.getElementById("flash");
+  fl.className=""; void fl.offsetWidth;
+  fl.classList.add(tipo,"show");
+  document.getElementById("flash-ico").textContent = tipo==="ok"?"✓":tipo==="warn"?"⚠":"✕";
+  document.getElementById("flash-msg").textContent = msg;
+  document.getElementById("flash-code").textContent = code||"";
+  clearTimeout(flashTO); flashTO=setTimeout(()=>fl.classList.remove("show"), 850);
+
+  if(document.getElementById("tg-som").checked){
+    try{
+      const ctx = beepCtx || (beepCtx = new (window.AudioContext||window.webkitAudioContext)());
+      const play=(f,d,t)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+        o.frequency.value=f;o.type="sine";g.gain.setValueAtTime(.18,ctx.currentTime+t);
+        g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+d);o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+d);};
+      if(tipo==="ok"){play(880,.09,0);play(1320,.13,.1);}
+      if(tipo==="warn"){play(520,.12,0);play(520,.12,.2);}
+      if(tipo==="err"){play(210,.4,0);}
+    }catch(e){}
+  }
+  if(document.getElementById("tg-vib").checked && navigator.vibrate){
+    navigator.vibrate(tipo==="ok"?60:tipo==="warn"?[70,60,70]:[220,120,220]);
+  }
+}
+
+/* ============ PWA · INSTALAÇÃO + SERVICE WORKER ============ */
+let deferredPrompt = null;
+const _isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const _isStandalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+window.addEventListener("beforeinstallprompt", e=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  if(!_isStandalone) document.getElementById("btn-install").classList.remove("hidden");
+});
+window.addEventListener("appinstalled", ()=>{
+  deferredPrompt = null;
+  document.getElementById("btn-install").classList.add("hidden");
+  feedback("ok","✓ App instalado","");
+});
+function installApp(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.finally(()=>{ deferredPrompt = null; });
+  }else if(_isIOS && !_isStandalone){
+    document.getElementById("ios-ov").classList.remove("hidden");
+  }
+}
+function closeIos(){ document.getElementById("ios-ov").classList.add("hidden"); focusCollector(); }
+/* iPhone não dispara beforeinstallprompt → mostra o botão mesmo assim */
+if(_isIOS && !_isStandalone) document.getElementById("btn-install").classList.remove("hidden");
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+
+/* ============ ANTI-CÓPIA (só em telas de toque; PC continua livre) ============ */
+if(window.matchMedia("(pointer:coarse)").matches){
+  document.addEventListener("contextmenu", e=>{
+    if(!(e.target.closest && e.target.closest("input,textarea"))) e.preventDefault();
+  });
+  document.addEventListener("copy", e=>{
+    const el = document.activeElement;
+    if(el && /^(INPUT|TEXTAREA)$/.test(el.tagName)) return;   // edição nos campos continua normal
+    e.preventDefault();
+  });
+  document.addEventListener("dragstart", e=>e.preventDefault());
+}
+
+/* boot */
+modo = null;                                   // força setModo aplicar classes no boot
+loadState();                                   // restaura conferência salva (se houver)
+if(!modo){
+  if(window.matchMedia("(min-width:900px)").matches) setModo("coletor");
+  else setModo("camera");
+}
+loadHist();
+renderUser(); render(); go("scr-main");
+</script>
+</body>
+</html>
