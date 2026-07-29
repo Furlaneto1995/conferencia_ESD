@@ -17,7 +17,7 @@
   --shadow:0 6px 24px rgba(10,30,55,.10);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{overflow-x:hidden}               /* ← sem rolagem horizontal */
+html,body{overflow-x:hidden}                     /* sem rolagem horizontal */
 html{-webkit-text-size-adjust:100%}
 body{
   font-family:-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
@@ -40,30 +40,43 @@ input{font:inherit}
 .chip-op{background:#ffffff22;border:1px solid #ffffff33;color:#fff;border-radius:999px;padding:6px 10px;font-size:11.5px;white-space:nowrap}
 
 main{max-width:560px;margin:0 auto;padding:14px 14px 120px;width:100%}
+section.screen.active{display:block}
+section.screen{display:none}
 
-/* ============ STATUS DO ROMANEIO ============ */
+/* passo a passo */
+.steps{display:flex;gap:8px;margin-bottom:14px}
+.step{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center;font-size:11.5px;color:var(--muted);font-weight:600}
+.step b{display:block;font-size:16px;margin-bottom:2px}
+
+/* card do romaneio */
 .status{
   background:var(--card);border-radius:16px;box-shadow:var(--shadow);
-  padding:16px;display:flex;align-items:center;gap:12px;min-width:0;
+  padding:14px;display:flex;align-items:center;gap:12px;min-width:0;
 }
 .status .ico{width:44px;height:44px;flex:none;border-radius:12px;background:var(--okbg);display:flex;align-items:center;justify-content:center;font-size:22px}
 .status .ico.off{background:#eef2f7}
 .status .grow{flex:1;min-width:0}
 .status .t{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .status .d{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-btn{flex:none;background:#eef2f7;color:var(--brand2);font-size:12.5px;font-weight:800;border-radius:10px;padding:10px 12px}
 
-/* ============ BOTÕES GIGANTES ============ */
+/* botões gigantes */
 .bigbtns{display:grid;gap:12px;margin-top:14px}
 .bigbtn{
   width:100%;min-height:96px;border-radius:18px;display:flex;align-items:center;justify-content:center;gap:14px;
-  font-size:19px;font-weight:800;color:#fff;padding:18px;box-shadow:0 8px 20px rgba(10,30,55,.18);
-  text-align:center;line-height:1.2;user-select:none;
+  font-size:19px;font-weight:800;color:#fff;padding:18px;text-align:center;line-height:1.2;user-select:none;
+  box-shadow:0 8px 20px rgba(10,30,55,.18);
 }
 .bigbtn:active{transform:scale(.98)}
 .bigbtn .bico{font-size:32px;flex:none}
 .bigbtn small{display:block;font-size:12px;font-weight:500;opacity:.9;margin-top:2px}
 .b-rom{background:linear-gradient(135deg,#31507c,#223b5e)}
 .b-bob{background:linear-gradient(135deg,var(--brand),var(--brand2))}
+.b-semrom{
+  min-height:72px;font-size:16px;color:#31507c;background:#fff;
+  border:2.5px dashed #b9c7d6;box-shadow:none;
+}
+.b-semrom .bico{font-size:24px}
 
 /* contador */
 .counter{
@@ -93,18 +106,20 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 120px;width:100%}
 .toggles label{display:flex;align-items:center;gap:6px;user-select:none}
 .toggles input{width:18px;height:18px}
 
-/* lista de lidas */
+/* histórico */
 .section-title{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:18px 4px 8px}
 .scanlist{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:6px 14px}
 .scan-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);min-width:0}
 .scan-row:last-child{border-bottom:none}
-.scan-row .n{width:26px;height:26px;flex:none;border-radius:8px;background:var(--okbg);color:var(--ok);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.scan-row .n{width:26px;height:26px;flex:none;border-radius:8px;background:var(--okbg);color:var(--ok);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .scan-row .n.warn{background:var(--warnbg);color:var(--warn)}
 .scan-row .c{font-weight:800;font-size:14px;letter-spacing:.4px;word-break:break-all;flex:1;min-width:0}
 .scan-row .tag{font-size:10.5px;font-weight:800;text-transform:uppercase}
 .scan-row .tag.ok{color:var(--ok)} .scan-row .tag.warn{color:var(--warn)}
 .scan-row .h{font-size:11px;color:var(--muted);white-space:nowrap}
 .empty{padding:16px 4px;font-size:13px;color:var(--muted);text-align:center}
+
+.voltar{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--brand2);margin-bottom:10px}
 
 /* rodapé fixo */
 .footer-bar{
@@ -116,7 +131,7 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 120px;width:100%}
   width:100%;max-width:560px;margin:0 auto;display:block;min-height:64px;border-radius:16px;
   background:var(--ok);color:#fff;font-size:18px;font-weight:800;
 }
-.footer-bar .fin:disabled{background:#b9c7d6;color:#fff}
+.footer-bar .fin:disabled{background:#b9c7d6}
 
 /* ============ CÂMERA TELA CHEIA ============ */
 #cam{position:fixed;inset:0;z-index:100;background:#000;display:flex;flex-direction:column}
@@ -127,29 +142,49 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 120px;width:100%}
   padding-top:max(14px, env(safe-area-inset-top));
   background:linear-gradient(rgba(0,0,0,.65),transparent);color:#fff;
 }
-.cam-top .mode{font-size:16px;font-weight:800}
+.cam-top .mode{font-size:15px;font-weight:800}
 .cam-top .cnt{margin-left:auto;background:#ffffff26;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:800;transition:transform .15s}
 .cam-top .cnt.bump{transform:scale(1.3)}
 .cam-frame{
-  position:absolute;z-index:2;left:50%;top:48%;transform:translate(-50%,-50%);
+  position:absolute;z-index:2;left:50%;top:46%;transform:translate(-50%,-50%);
   width:min(80vw,340px);height:170px;border-radius:14px;pointer-events:none;
   box-shadow:0 0 0 200vmax rgba(0,0,0,.35);outline:3px solid rgba(255,255,255,.85);outline-offset:-1.5px;
 }
 .cam-frame::after{content:"";position:absolute;left:8%;right:8%;top:50%;height:2px;background:rgba(255,80,80,.9);box-shadow:0 0 8px rgba(255,60,60,.9);animation:sweep 2s ease-in-out infinite}
 @keyframes sweep{0%,100%{top:22%}50%{top:78%}}
-.cam-bottom{
-  margin-top:auto;position:relative;z-index:2;padding:16px;display:grid;gap:10px;
-  padding-bottom:max(16px, env(safe-area-inset-bottom));
-  background:linear-gradient(transparent,rgba(0,0,0,.75));
+
+/* status "iniciando" sobre a imagem preta */
+.cam-status{
+  position:absolute;z-index:3;left:50%;top:46%;transform:translate(-50%,-50%);
+  color:#fff;text-align:center;font-size:15px;font-weight:700;line-height:1.5;
+  display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:none;width:80vw;
 }
-.cam-bottom .bigbtn{min-height:64px;font-size:16px;box-shadow:none}
+.spin{width:34px;height:34px;border-radius:50%;border:4px solid #ffffff40;border-top-color:#fff;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* painel de erro da câmera */
+.cam-fallback{
+  position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;color:#fff;padding:30px;gap:10px;background:rgba(0,0,0,.55);
+}
+.cam-fallback .fico{font-size:52px}
+.cam-fallback b{font-size:17px}
+.cam-fallback p{font-size:13.5px;opacity:.9;line-height:1.55;max-width:320px}
+.cam-fallback .retry{
+  margin-top:8px;background:#fff;color:#17293d;font-weight:800;border-radius:14px;
+  padding:14px 22px;font-size:15px;min-width:240px;min-height:54px;
+}
+
+.cam-bottom{
+  margin-top:auto;position:relative;z-index:5;padding:16px;display:grid;gap:10px;
+  padding-bottom:max(16px, env(safe-area-inset-bottom));
+  background:linear-gradient(transparent,rgba(0,0,0,.8));
+}
+.cam-bottom .bigbtn{min-height:62px;font-size:16px;box-shadow:none}
 .b-close{background:#ffffff26;border:1px solid #ffffff40;backdrop-filter:blur(4px)}
 .b-simu{background:#fff;color:#17293d}
-.cam-fallback{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;padding:30px;gap:8px}
-.cam-fallback .fico{font-size:54px}
-.cam-fallback p{font-size:14px;opacity:.85;line-height:1.5}
 
-/* ============ FLASH DE FEEDBACK ============ */
+/* ============ FLASH ============ */
 #flash{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .12s}
 #flash.show{opacity:1}
 #flash .box{color:#fff;text-align:center;padding:26px 30px;border-radius:22px;max-width:88vw;transform:scale(.9);transition:transform .12s}
@@ -166,7 +201,7 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 120px;width:100%}
 .modal .sheet{background:#fff;width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:22px 20px 20px}
 .sheet h3{font-size:17px;margin-bottom:10px}
 .sheet .row{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:8px 0;border-bottom:1px solid var(--line)}
-.sheet .row b{font-size:15px}
+.sheet .row b{font-size:15px;text-align:right}
 .sheet .actions{display:grid;gap:10px;margin-top:16px}
 .sheet .btn-s{width:100%;min-height:58px;border-radius:14px;font-size:16px;font-weight:800}
 .btn-ghost{background:#eef2f7;color:var(--ink)}
@@ -176,9 +211,7 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 120px;width:100%}
 .report{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:20px 16px;overflow-wrap:break-word}
 .report h2{font-size:18px}
 .report .rmeta{display:grid;gap:5px;font-size:13.5px;margin:14px 0;color:#334155}
-.report .total{
-  display:flex;align-items:center;gap:14px;background:var(--okbg);border-radius:14px;padding:14px;margin:6px 0 14px;
-}
+.report .total{display:flex;align-items:center;gap:14px;background:var(--okbg);border-radius:14px;padding:14px;margin:6px 0 14px}
 .report .total b{font-size:34px;color:var(--ok);line-height:1}
 .report .total span{font-size:13px;font-weight:700;color:var(--ok)}
 .rtable{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
@@ -215,60 +248,67 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 120px;width:100%}
 
 <main>
 
-<!-- ============ TELA PRINCIPAL ============ -->
-<section id="scr-main" class="screen">
-
-  <!-- status do romaneio -->
-  <div class="status" id="rom-status">
-    <div class="ico off">🧾</div>
-    <div class="grow">
-      <div class="t">Nenhum romaneio lido</div>
-      <div class="d">Toque em "Ler Romaneio" para começar</div>
-    </div>
+<!-- ============ TELA 1 · LER ROMANEIO ============ -->
+<section id="scr-main" class="screen active">
+  <div class="steps">
+    <div class="step"><b>1</b>Ler romaneio</div>
+    <div class="step"><b>2</b>Ler bobinas</div>
+    <div class="step"><b>3</b>Finalizar</div>
   </div>
 
-  <!-- os dois botões -->
   <div class="bigbtns">
     <button class="bigbtn b-rom" onclick="openCam('rom')">
       <span class="bico">🧾</span>
-      <span>LER ROMANEIO<small>Câmera · câmera do coletor</small></span>
+      <span>LER ROMANEIO<small>a câmera abre em tela cheia</small></span>
     </button>
-    <button class="bigbtn b-bob" onclick="openCam('bob')">
+    <button class="bigbtn b-semrom" onclick="startSemRomaneio()">
       <span class="bico">📦</span>
-      <span>LER BOBINA<small>Leitura contínua — bipe várias seguidas</small></span>
+      <span>LER BOBINAS SEM ROMANEIO</span>
     </button>
   </div>
 
-  <div class="demo-line no-print">Código de teste: <b onclick="onRomaneio('ROM-2026-058412')">ROM-2026-058412</b></div>
+  <div class="demo-line no-print">Código de teste: <b onclick="onCode('ROM-2026-058412')">ROM-2026-058412</b></div>
 
-  <!-- contador -->
-  <div class="counter">
-    <div class="num" id="ct-num">0</div>
-    <div class="lbl">bobinas<br>conferidas</div>
-    <div class="dup"><b id="ct-dup">0</b><span>duplicadas</span></div>
-  </div>
-
-  <!-- coletor / leitor USB -->
   <div class="collector no-print">
-    <input id="inp-col" inputmode="none" autocomplete="off" placeholder="⌨️ BIPE AQUI (COLETOR / LEITOR USB)">
-    <p>Coletor de dados e leitor USB funcionam direto — códigos iniciados com <b>ROM-</b> abrem o romaneio, os demais contam como bobina.</p>
+    <input id="inp-home" inputmode="none" autocomplete="off" placeholder="⌨️ BIPE AQUI (COLETOR / LEITOR USB)">
+    <p>Códigos iniciados com <b>ROM-</b> abrem o romaneio · os demais contam como bobina.</p>
   </div>
 
   <div class="toggles no-print">
     <label><input type="checkbox" id="tg-som" checked> 🔊 Som</label>
     <label><input type="checkbox" id="tg-vib" checked> 📳 Vibração</label>
   </div>
+</section>
 
-  <!-- histórico -->
-  <div class="section-title">Últimas leituras</div>
-  <div class="scanlist" id="scanlist">
-    <div class="empty">Nenhuma bobina lida ainda.</div>
+<!-- ============ TELA 2 · LER BOBINAS ============ -->
+<section id="scr-bob" class="screen">
+  <button class="voltar no-print" onclick="go('scr-main')">← início</button>
+
+  <div class="status" id="rom-card"></div>
+
+  <div class="bigbtns">
+    <button class="bigbtn b-bob" onclick="openCam('bob')">
+      <span class="bico">📦</span>
+      <span>LER BOBINA<small>leitura contínua — bipe várias seguidas</small></span>
+    </button>
   </div>
 
+  <div class="counter">
+    <div class="num" id="ct-num">0</div>
+    <div class="lbl">bobinas<br>conferidas</div>
+    <div class="dup"><b id="ct-dup">0</b><span>duplicadas</span></div>
+  </div>
+
+  <div class="collector no-print">
+    <input id="inp-bob" inputmode="none" autocomplete="off" placeholder="⌨️ BIPE AQUI (COLETOR / LEITOR USB)">
+  </div>
+
+  <div class="section-title">Últimas leituras</div>
+  <div class="scanlist" id="scanlist"><div class="empty">Nenhuma bobina lida ainda.</div></div>
 </section>
 
 <!-- ============ RELATÓRIO ============ -->
-<section id="scr-rep" class="screen hidden">
+<section id="scr-rep" class="screen">
   <div class="report" id="report"></div>
   <div class="bigbtns no-print">
     <button class="bigbtn b-bob" style="min-height:64px;font-size:16px" onclick="window.print()">🖨️ Imprimir / salvar PDF</button>
@@ -279,7 +319,7 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 120px;width:100%}
 </main>
 
 <!-- rodapé -->
-<div class="footer-bar no-print" id="footer">
+<div class="footer-bar no-print hidden" id="footer">
   <button class="fin" id="btn-fin" disabled onclick="askFinish()">✓ FINALIZAR CONFERÊNCIA</button>
 </div>
 
@@ -291,6 +331,7 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 120px;width:100%}
     <div class="cnt" id="cam-cnt">0</div>
   </div>
   <div class="cam-frame"></div>
+  <div class="cam-status" id="cam-status"><div class="spin"></div>Iniciando câmera…</div>
   <div class="cam-bottom">
     <button class="bigbtn b-simu" onclick="simulacao()">🎲 Simular bip (demo)</button>
     <button class="bigbtn b-close" onclick="closeCam()">✕ Fechar câmera</button>
@@ -313,109 +354,183 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 120px;width:100%}
 </div>
 
 <script>
-/* ============ MOCK: romaneios (sem quantidade fixa de bobinas) ============ */
+/* ============ MOCK: romaneios ============ */
 const ROMANEIOS = {
  "ROM-2026-058412":{ cliente:"Embalagens Vale S.A.", destino:"Guarulhos / SP", transp:"RotaForte Transp.", motorista:"J. Pereira · FZK-4A21" },
  "ROM-2026-058413":{ cliente:"Filmes Alfa Ltda.", destino:"S. José dos Campos / SP", transp:"TransCarga", motorista:"M. Souza · BRA-2E19" }
 };
 
 /* ============ ESTADO ============ */
-let rom = null;              // romaneio aberto
-let bobinas = [];            // {cod, hora}
-let dups = 0;
+let rom = null;             // romaneio vinculado (ou null = sem romaneio)
+let bobinas = [];           // {cod, hora}
+let dups = 0, seq = 0;
+let feedLog = [];           // histórico exibido
 let inicio = null;
-let feedLog = [];            // histórico exibido
-let camMode = null, html5 = null, lastCode = "", lastT = 0, wakeLock = null;
+let camMode = null, html5 = null, lastCode = "", lastT = 0, wakeLock = null, camCheck = null;
 
-/* ============ CÂMERA (TELA CHEIA) ============ */
+/* ============ NAVEGAÇÃO ============ */
+function go(id){
+  document.querySelectorAll("section.screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.getElementById("footer").classList.toggle("hidden", id!=="scr-bob");
+  window.scrollTo(0,0);
+  focusCollector();
+}
+function startSemRomaneio(){
+  if(!inicio) inicio = new Date();
+  renderRomCard();
+  go("scr-bob");
+  setTimeout(()=>openCam("bob"), 350);
+}
+
+/* ============ CÂMERA TELA CHEIA ============ */
+function camEl(){ return document.getElementById("cam"); }
+
 async function openCam(mode){
-  if(mode==="bob" && !rom){ feedback("warn","Leia o romaneio primeiro!",""); return; }
   camMode = mode;
-  document.getElementById("cam").classList.remove("hidden");
-  document.getElementById("cam-mode").textContent = mode==="rom" ? "🧾 Aponte para o ROMANEIO" : "📦 Lendo BOBINAS (contínuo)";
+  camEl().classList.remove("hidden");
+  document.querySelectorAll(".cam-fallback").forEach(e=>e.remove());
+  document.getElementById("cam-mode").textContent =
+    mode==="rom" ? "1/2 · Aponte para o ROMANEIO" : "2/2 · Lendo BOBINAS (contínuo)";
   refreshCamCnt();
+  showStatus(true, "Iniciando câmera…");
   try{ wakeLock = await navigator.wakeLock?.request("screen"); }catch(e){}
+  await startCam(mode, {facingMode:"environment"});
+}
 
-  if(!window.Html5Qrcode){ camFallback(); return; }
+function timeout(ms){ return new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), ms)); }
+
+async function startCam(mode, constraint){
+  if(!window.Html5Qrcode){ camFail(); return; }
+  await stopCam();
   try{
     html5 = new Html5Qrcode("cam-reader");
-    await html5.start(
-      { facingMode:"environment" },
-      { fps:12, qrbox:(w,h)=>({ width:Math.min(w*0.9,340), height:170 }) },
-      (decoded)=>{ onCode(decoded); },
-      ()=>{}
-    );
-  }catch(e){ camFallback(); }
+    await Promise.race([
+      html5.start(
+        constraint,
+        { fps:12, qrbox:(w,h)=>({ width:Math.min(w*0.9,340), height:170 }) },
+        (decoded)=>{ onCode(decoded); },
+        ()=>{}
+      ),
+      timeout(9000)   // se travar pedindo permissão, não fica na tela preta
+    ]);
+    showStatus(false);
+    // verificação extra: a stream existe mesmo?
+    clearTimeout(camCheck);
+    camCheck = setTimeout(()=>{
+      const v = document.querySelector("#cam-reader video");
+      if(!v || !v.videoWidth){ camFail(); }
+    }, 2500);
+  }catch(e){
+    // tenta de novo sem exigir câmera traseira (alguns PCs/coletores falham com 'environment')
+    if(constraint && constraint.facingMode){ await startCam(mode, true); }
+    else camFail();
+  }
 }
-function camFallback(){
+async function stopCam(){
+  clearTimeout(camCheck);
+  if(html5){ try{ await html5.stop(); }catch(e){} try{ html5.clear(); }catch(e){} html5=null; }
+}
+function showStatus(on, txt){
+  const s = document.getElementById("cam-status");
+  s.style.display = on ? "flex" : "none";
+  if(txt) s.lastChild.textContent = txt;
+}
+function camFail(){
+  showStatus(false);
+  if(document.querySelector(".cam-fallback")) return;
   const el = document.createElement("div");
   el.className = "cam-fallback";
-  el.innerHTML = `<div class="fico">📷</div><b>Câmera indisponível aqui</b>
-    <p>A câmera funciona no celular/coletor acessando por <b>HTTPS</b> (ex.: GitHub Pages).<br>Use os botões abaixo para testar.</p>`;
-  document.getElementById("cam").appendChild(el);
+  el.innerHTML = `
+    <div class="fico">📷</div>
+    <b>Não consegui abrir a câmera aqui</b>
+    <p>No celular/coletor funciona ao acessar por <b>HTTPS</b> (ex.: GitHub Pages) e permitir o uso da câmera.<br>Neste ambiente, teste pelos botões abaixo:</p>
+    <button class="retry" onclick="retryCam()">↻ Tentar novamente</button>`;
+  camEl().appendChild(el);
+}
+function retryCam(){
+  document.querySelectorAll(".cam-fallback").forEach(e=>e.remove());
+  showStatus(true, "Iniciando câmera…");
+  startCam(camMode, {facingMode:"environment"});
 }
 async function closeCam(){
-  if(html5){ try{ await html5.stop(); }catch(e){} try{ html5.clear(); }catch(e){} html5=null; }
-  document.getElementById("cam").classList.add("hidden");
+  await stopCam();
+  showStatus(false);
+  camEl().classList.add("hidden");
   document.querySelectorAll(".cam-fallback").forEach(e=>e.remove());
   try{ wakeLock?.release(); }catch(e){} wakeLock=null;
   focusCollector();
 }
 
-/* ============ ROTEAMENTO DE CÓDIGO ============ */
+/* ============ ROTEAMENTO DOS CÓDIGOS ============ */
 function onCode(raw){
   const code = (raw||"").trim().toUpperCase();
   if(!code) return;
   const now = Date.now();
-  if(code===lastCode && now-lastT<1200) return;   // anti-releitura da câmera
+  if(code===lastCode && now-lastT<1200) return;      // anti-releitura da câmera
   lastCode = code; lastT = now;
-
   if(/^ROM/.test(code)) onRomaneio(code);
   else onBobina(code);
 }
+
 function onRomaneio(code){
   const r = ROMANEIOS[code];
-  if(!r){ feedback(camMode()!=null?"err":"err","Romaneio não encontrado", code); return; }
+  if(!r){ feedback("err","Romaneio não encontrado", code); return; }
+  if(rom && rom.cod===code){ feedback("warn","Romaneio já vinculado", code); return; }
+  if(rom && rom.cod!==code && bobinas.length){
+    feedback("warn","Romaneio já vinculado", "Finalize antes de trocar");
+    return;
+  }
   rom = { cod: code, ...r };
-  inicio = new Date();
-  document.getElementById("rom-status").innerHTML = `
-    <div class="ico">🧾</div>
-    <div class="grow">
-      <div class="t">${code}</div>
-      <div class="d">${r.cliente} · ${r.destino} · ${r.transp}</div>
-    </div>`;
+  if(!inicio) inicio = new Date();
+  renderRomCard();
   feedback("ok","Romaneio aberto", code);
-  if(camIsOpen()) closeCam();
+  // se leu o romaneio na câmera, vai para a tela de bobinas e abre a câmera
+  if(document.getElementById("cam").classList.contains("hidden")){ /* via coletor/USB */ }
+  closeCam();
+  go("scr-bob");
+  if(camMode==="rom"){ setTimeout(()=>openCam("bob"), 500); }
   updateFin();
 }
-function camIsOpen(){ return !document.getElementById("cam").classList.contains("hidden"); }
 
 function onBobina(code){
-  if(!rom){ feedback("warn","Leia o romaneio primeiro!",""); return; }
+  // se o usuário bipou bobina na tela inicial, entra no modo "sem romaneio"
+  if(document.getElementById("scr-main").classList.contains("active")){
+    if(!inicio) inicio = new Date();
+    renderRomCard(); go("scr-bob");
+  }
+  if(!inicio) inicio = new Date();
   const hora = new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   if(bobinas.some(b=>b.cod===code)){
     dups++;
     feedback("warn","Duplicada!", code+" já foi lida");
     feedLog.unshift({cod:code,hora,dup:true});
   } else {
+    seq++;
     bobinas.push({cod:code,hora});
     feedback("ok","✓ Bobina conferida", code);
-    feedLog.unshift({cod:code,hora,dup:false});
+    feedLog.unshift({seq,cod:code,hora,dup:false});
     bump();
   }
   feedLog = feedLog.slice(0,30);
   render();
 }
 
-/* ============ COLETOR / LEITOR USB (teclado) ============ */
-const inpCol = document.getElementById("inp-col");
-inpCol.addEventListener("keydown", e=>{
-  if(e.key==="Enter"){ onCode(inpCol.value); inpCol.value=""; }
+/* ============ COLETOR / LEITOR USB ============ */
+["inp-home","inp-bob"].forEach(id=>{
+  const inp = document.getElementById(id);
+  inp.addEventListener("keydown", e=>{
+    if(e.key==="Enter"){ onCode(inp.value); inp.value=""; }
+  });
+  inp.addEventListener("blur",()=>setTimeout(focusCollector,400));
 });
 function focusCollector(){
-  if(window.matchMedia("(min-width:900px)").matches && !camIsOpen()) inpCol.focus();
+  if(!window.matchMedia("(min-width:900px)").matches) return;
+  if(!document.getElementById("cam").classList.contains("hidden")) return;
+  const id = document.getElementById("scr-bob").classList.contains("active") ? "inp-bob" :
+             document.getElementById("scr-main").classList.contains("active") ? "inp-home" : null;
+  if(id) document.getElementById(id).focus();
 }
-inpCol.addEventListener("blur",()=>setTimeout(focusCollector,400));
 focusCollector();
 
 /* ============ DEMO ============ */
@@ -423,7 +538,7 @@ function simulacao(){
   if(camMode==="rom"){ onCode("ROM-2026-058412"); return; }
   let code;
   if(bobinas.length && Math.random()<0.15){
-    code = bobinas[Math.floor(Math.random()*bobinas.length)].cod;      // força duplicada
+    code = bobinas[Math.floor(Math.random()*bobinas.length)].cod;   // força duplicada
   } else {
     code = "7898" + String(Math.floor(Math.random()*90000000)+10000000);
   }
@@ -431,8 +546,30 @@ function simulacao(){
 }
 
 /* ============ RENDER ============ */
+function renderRomCard(){
+  const card = document.getElementById("rom-card");
+  if(rom){
+    card.innerHTML = `
+      <div class="ico">🧾</div>
+      <div class="grow">
+        <div class="t">${rom.cod}</div>
+        <div class="d">${rom.cliente} · ${rom.destino}</div>
+      </div>
+      <button class="mini-btn" onclick="openCam('rom')">Trocar</button>`;
+  } else {
+    card.innerHTML = `
+      <div class="ico off">🧾</div>
+      <div class="grow">
+        <div class="t">Sem romaneio vinculado</div>
+        <div class="d">As bobinas serão listadas sem vínculo</div>
+      </div>
+      <button class="mini-btn" onclick="openCam('rom')">Vincular</button>`;
+  }
+}
 function bump(){
-  ["ct-num","cam-cnt"].forEach(id=>{ const e=document.getElementById(id); e.classList.remove("bump"); void e.offsetWidth; e.classList.add("bump"); });
+  ["ct-num","cam-cnt"].forEach(id=>{
+    const e=document.getElementById(id); e.classList.remove("bump"); void e.offsetWidth; e.classList.add("bump");
+  });
 }
 function refreshCamCnt(){ document.getElementById("cam-cnt").textContent = bobinas.length; }
 function render(){
@@ -440,9 +577,9 @@ function render(){
   document.getElementById("ct-dup").textContent = dups;
   refreshCamCnt();
   const list = document.getElementById("scanlist");
-  list.innerHTML = feedLog.length ? feedLog.map((f,i)=>`
+  list.innerHTML = feedLog.length ? feedLog.map(f=>`
     <div class="scan-row">
-      <div class="n ${f.dup?"warn":""}">${f.dup?"!":bobinas.length - feedLog.slice(0,i).filter(x=>!x.dup).length}</div>
+      <div class="n ${f.dup?"warn":""}">${f.dup?"!":String(f.seq).padStart(2,"0")}</div>
       <div class="c">${f.cod}</div>
       <div class="tag ${f.dup?"warn":"ok"}">${f.dup?"duplicada":"lida"}</div>
       <div class="h">${f.hora}</div>
@@ -450,22 +587,22 @@ function render(){
   updateFin();
 }
 function updateFin(){
-  document.getElementById("btn-fin").disabled = !(rom && bobinas.length>0);
+  document.getElementById("btn-fin").disabled = bobinas.length===0;
 }
 
 /* ============ FINALIZAR ============ */
 function askFinish(){
   document.getElementById("m-body").innerHTML = `
-    <div class="row"><span>Romaneio</span><b>${rom.cod}</b></div>
+    <div class="row"><span>Romaneio</span><b>${rom?rom.cod:"não vinculado"}</b></div>
     <div class="row"><span>Bobinas conferidas</span><b style="color:var(--ok)">${bobinas.length}</b></div>
     <div class="row"><span>Leituras duplicadas</span><b style="color:${dups?"var(--warn)":"inherit"}">${dups}</b></div>`;
   modal(true);
 }
 function modal(on){ document.getElementById("modal").classList.toggle("hidden",!on); }
 function doFinish(){
-  modal(false);
+  modal(false); closeCam();
   const fim = new Date();
-  const dur = Math.max(1, Math.round((fim-inicio)/60000));
+  const dur = Math.max(1, Math.round((fim-(inicio||fim))/60000));
   document.getElementById("report").innerHTML = `
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <div><h2>Relatório de Conferência</h2><p style="font-size:12px;color:var(--muted)">Gerado em ${fim.toLocaleString("pt-BR")}</p></div>
@@ -473,41 +610,30 @@ function doFinish(){
     </div>
     <div class="total"><b>${bobinas.length}</b><span>bobinas conferidas</span></div>
     <div class="rmeta">
-      <div><b>Romaneio:</b> ${rom.cod}</div>
-      <div><b>Cliente:</b> ${rom.cliente}</div>
-      <div><b>Destino:</b> ${rom.destino}</div>
-      <div><b>Transportadora:</b> ${rom.transp}</div>
-      <div><b>Motorista:</b> ${rom.motorista}</div>
+      ${rom ? `<div><b>Romaneio:</b> ${rom.cod}</div>
+               <div><b>Cliente:</b> ${rom.cliente}</div>
+               <div><b>Destino:</b> ${rom.destino}</div>
+               <div><b>Transportadora:</b> ${rom.transp}</div>
+               <div><b>Motorista:</b> ${rom.motorista}</div>`
+            : `<div><b>Romaneio:</b> — (não vinculado)</div>`}
       <div><b>Operador:</b> 042 · Silva</div>
       <div><b>Duração:</b> ${dur} min</div>
       ${dups?`<div><b>Leituras duplicadas ignoradas:</b> ${dups}</div>`:""}
     </div>
     <div class="section-title" style="margin-left:0">Bobinas (${bobinas.length})</div>
     <table class="rtable"><tbody>
-      ${bobinas.map(b=>`<tr><td>${b.cod}</td><td>${b.hora}</td></tr>`).join("")}
+      ${bobinas.map((b,i)=>`<tr><td>${String(i+1).padStart(2,"0")} · ${b.cod}</td><td>${b.hora}</td></tr>`).join("")}
     </tbody></table>
     <div class="signs"><div class="sign">Conferente</div><div class="sign">Motorista / Transportadora</div></div>`;
-  // esconde fluxo principal
-  document.getElementById("scr-main").classList.add("hidden");
-  document.getElementById("footer").classList.add("hidden");
-  document.getElementById("scr-rep").classList.remove("hidden");
-  window.scrollTo(0,0);
+  go("scr-rep");
 }
 function novaConf(){
-  rom=null; bobinas=[]; dups=0; feedLog=[]; lastCode="";
-  document.getElementById("rom-status").innerHTML = `
-    <div class="ico off">🧾</div>
-    <div class="grow">
-      <div class="t">Nenhum romaneio lido</div>
-      <div class="d">Toque em "Ler Romaneio" para começar</div>
-    </div>`;
-  document.getElementById("scr-rep").classList.add("hidden");
-  document.getElementById("scr-main").classList.remove("hidden");
-  document.getElementById("footer").classList.remove("hidden");
-  render(); window.scrollTo(0,0);
+  rom=null; bobinas=[]; dups=0; seq=0; feedLog=[]; inicio=null; lastCode="";
+  renderRomCard(); render();
+  go("scr-main");
 }
 
-/* ============ FEEDBACK (flash + som + vibração) ============ */
+/* ============ FEEDBACK ============ */
 let flashTO=null, beepCtx=null;
 function feedback(tipo,msg,code){
   const fl=document.getElementById("flash");
@@ -533,6 +659,9 @@ function feedback(tipo,msg,code){
     navigator.vibrate(tipo==="ok"?60:tipo==="warn"?[70,60,70]:[220,120,220]);
   }
 }
+
+/* boot */
+renderRomCard(); render(); go("scr-main");
 </script>
 </body>
 </html>
