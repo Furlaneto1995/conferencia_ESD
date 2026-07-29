@@ -325,7 +325,6 @@ section.screen.active{display:block}
       <input id="inp-op" autocomplete="off" placeholder="OP-000000">
       <div class="bigbtns">
         <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="confirmOP()">✓ CONFIRMAR OP</button>
-        <button class="bigbtn b-bob if-camera" style="min-height:64px;font-size:17px" onclick="openCam('op')">📷 ESCANEAR OP</button>
       </div>
     </div>
   </div>
@@ -460,6 +459,33 @@ let grupos = [];        // {tipo:'ROM'|'OP', cod, dados|null, bobinas:[{cod,hora
 let gAtual = -1;        // índice do vínculo apontado agora
 let dups = 0, seq = 0, feedLog = [], inicio = null;
 
+/* ============ PERSISTÊNCIA (localStorage) ============ */
+const STATE_KEY = "confere_state_v1";
+function saveState(){
+  try{
+    localStorage.setItem(STATE_KEY, JSON.stringify({
+      grupos, gAtual, dups, seq, feedLog,
+      inicio: inicio ? inicio.toISOString() : null,
+      operador, modo
+    }));
+  }catch(e){}
+}
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STATE_KEY));
+    if(!s) return;
+    grupos  = s.grupos  || [];
+    gAtual  = (s.gAtual!=null) ? s.gAtual : (grupos.length?grupos.length-1:-1);
+    dups    = s.dups || 0;
+    seq     = s.seq  || 0;
+    feedLog = s.feedLog || [];
+    inicio  = s.inicio ? new Date(s.inicio) : null;
+    operador = s.operador || "";
+    if(s.modo) setModo(s.modo);
+  }catch(e){}
+}
+function clearState(){ try{ localStorage.removeItem(STATE_KEY); }catch(e){} }
+
 let camMode = null, wakeLock = null, lastCode = "", lastT = 0;
 let camStream = null, detTimer = null, detecting = false;
 let html5 = null, camCheck = null;
@@ -513,6 +539,7 @@ function setModo(m){
   document.getElementById("m-camera").classList.toggle("on", m==="camera");
   document.getElementById("m-coletor").classList.toggle("on", m==="coletor");
   if(m!=="camera") closeCam();
+  saveState();
   focusCollector();
 }
 
@@ -527,7 +554,7 @@ function closeUser(){ document.getElementById("user-ov").classList.add("hidden")
 function saveUser(){
   const v = document.getElementById("inp-user").value.trim().replace(/\s+/g," ");
   if(!v){ feedback("warn","Informe um nome",""); return; }
-  operador = v; renderUser(); closeUser();
+  operador = v; renderUser(); closeUser(); saveState();
   feedback("ok","Operador definido", v);
 }
 document.getElementById("inp-user").addEventListener("keydown",e=>{ if(e.key==="Enter") saveUser(); });
@@ -796,12 +823,27 @@ function onCode(raw){
   onRomaneio(code);
 }
 
-/* ============ COLETOR DE DADOS ============ */
+/* ============ COLETOR DE DADOS ============
+   O coletor "cola" o código e não envia Enter →
+   processamos automaticamente quando a digitação para (varredura rápida). */
+let colTimer = null;
+function autoSubmit(inp){
+  clearTimeout(colTimer);
+  colTimer = setTimeout(()=>{
+    const v = inp.value.trim();
+    if(v){ onCode(v); inp.value = ""; }
+  }, 200);
+}
 ["inp-home","inp-bob"].forEach(id=>{
   const inp = document.getElementById(id);
   inp.addEventListener("keydown", e=>{
-    if(e.key==="Enter"){ onCode(inp.value); inp.value=""; }
+    if(e.key==="Enter"){ clearTimeout(colTimer); onCode(inp.value); inp.value=""; }
   });
+  inp.addEventListener("input", ()=>autoSubmit(inp));          // coletor sem Enter
+  inp.addEventListener("paste", ()=>setTimeout(()=>{           // colagem direta
+    const v = inp.value.trim();
+    if(v){ clearTimeout(colTimer); onCode(v); inp.value=""; }
+  }, 40));
   inp.addEventListener("blur",()=>setTimeout(focusCollector,400));
 });
 function focusCollector(){
@@ -910,6 +952,7 @@ function render(){
   }).join("") : '<div class="empty">Nenhuma leitura ainda.</div>';
   renderVincCard();
   updateFin();
+  saveState();                 // tudo fica salvo no localStorage automaticamente
 }
 function updateFin(){
   const btn = document.getElementById("btn-fin");
@@ -1073,6 +1116,7 @@ function histReport(i){ renderReport(hist[i]); go("scr-rep"); }
 /* ============ NOVA CONFERÊNCIA ============ */
 function novaConf(){
   grupos=[]; gAtual=-1; dups=0; seq=0; feedLog=[]; inicio=null; lastCode=""; camMode=null; mainExpandido=-1; finExpandido=-1;
+  clearState();
   render();
   go("scr-main");
 }
@@ -1105,10 +1149,14 @@ function feedback(tipo,msg,code){
 }
 
 /* boot */
-if(window.matchMedia("(min-width:900px)").matches){ setModo("coletor"); }
-else { setModo("camera"); }
+modo = null;                                   // força setModo aplicar classes no boot
+loadState();                                   // restaura conferência salva (se houver)
+if(!modo){
+  if(window.matchMedia("(min-width:900px)").matches) setModo("coletor");
+  else setModo("camera");
+}
 loadHist(); seedHist();
 renderUser(); render(); go("scr-main");
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a22cb7825a37c6a6',t:'MTc4NTMzNDMyOA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
