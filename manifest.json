@@ -1,6 +1,6 @@
 {
-  "name": "Conferência de Bobinas",
-  "short_name": "Conferência",
+  "name": "ESD",
+  "short_name": "ESD",
   "description": "Conferência de bobinas e romaneios por código de barras",
   "id": "./index.html",
   "start_url": "./index.html",
