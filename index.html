@@ -256,11 +256,11 @@ section.screen.active{display:block}
 .report .total span{font-size:13px;font-weight:700;color:var(--ok)}
 .rtable{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
 .rtable thead{display:none}
-.rtable,.rtable tbody,.rtable tr,.rtable td{display:block;width:100%}
-.rtable tr{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;padding:10px 12px;display:flex;align-items:center;gap:10px}
-.rtable td{border:none;padding:0;min-width:0}
-.rtable td:first-child{flex:1;font-weight:800;letter-spacing:.4px;word-break:break-all}
-.rtable td:last-child{white-space:nowrap;color:var(--muted);font-size:12px}
+.rtable,.rtable tbody{display:block;width:100%}
+.rtable tr{display:flex;align-items:center;gap:10px;width:100%;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;padding:10px 12px}
+.rtable td{display:block;border:none;padding:0;min-width:0}
+.rtable td:first-child{flex:1;font-weight:800;letter-spacing:.4px;word-break:break-word}
+.rtable td:last-child{flex:none;white-space:nowrap;color:var(--muted);font-size:12px}
 .signs{display:grid;gap:26px;margin-top:36px}
 .sign{border-top:1.5px solid #94a3b8;text-align:center;font-size:12px;color:var(--muted);padding-top:6px}
 @media(min-width:700px){.signs{grid-template-columns:1fr 1fr;gap:30px}}
@@ -1042,9 +1042,7 @@ function renderReport(rec){
     <div class="rmeta">
       <div><b>Operador:</b> ${rec.operador}</div>
       <div><b>Duração:</b> ${durMin(rec)} min</div>
-      <div><b>Romaneio:</b> ${nRom.length ? nRom.map(g=>g.cod).join(", ") : "-"}</div>
-      <div><b>OP:</b> ${nOP.length ? nOP.map(g=>g.cod).join(", ") : "-"}</div>
-      <div><b>Romaneios lidos:</b> ${nRom.length} · <b>OPs:</b> ${nOP.length}</div>
+      <div><b>Romaneios lidos:</b> ${nRom.length} · <b>OPs lidas:</b> ${nOP.length}</div>
       <div><b>Bobinas / pacotes:</b> ${totBob} (bipados ${totLid} · informados ${totBob-totLid})</div>
       <div><b>Leitura via:</b> ${rec.modo==="camera"?"Câmera":"Coletor de dados"}</div>
       ${rec.dups?`<div><b>Leituras duplicadas ignoradas:</b> ${rec.dups}</div>`:""}
@@ -1149,5 +1147,5 @@ else { setModo("camera"); }
 loadHist(); seedHist();
 renderUser(); render(); go("scr-main");
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a22c54fc6afbf243',t:'MTc4NTMzMDI5Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
