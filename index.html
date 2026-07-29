@@ -67,6 +67,7 @@ section.screen.active{display:block}
 .status .t{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .status .d{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mini-btn{flex:none;background:#eef2f7;color:var(--brand2);font-size:12.5px;font-weight:800;border-radius:10px;padding:10px 12px}
+.vbig{font-size:25px;font-weight:800;letter-spacing:.4px;line-height:1.15;word-break:break-all}
 
 /* botões gigantes */
 .bigbtns{display:grid;gap:12px;margin-top:14px}
@@ -144,6 +145,7 @@ section.screen.active{display:block}
   background:var(--ok);color:#fff;font-size:18px;font-weight:800;
 }
 .footer-bar .fin:disabled{background:#b9c7d6}
+.footer-bar .fin.troc{background:#31507c}
 
 /* telas de entrada (OP / usuário / quantidade) */
 .entry{max-width:460px;margin:0 auto}
@@ -309,6 +311,8 @@ section.screen.active{display:block}
     </button>
   </div>
 
+  <div id="main-vincs"></div>
+
   <div class="demo-line no-print">Código de teste: <b onclick="onCode('ROM-2026-058412')">ROM-2026-058412</b></div>
 
   <div class="collector if-coletor no-print">
@@ -402,9 +406,9 @@ section.screen.active{display:block}
 
 </main>
 
-<!-- rodapé -->
+<!-- rodapé: na tela principal = FINALIZAR · na tela de bobinas = TROCAR vínculo -->
 <div class="footer-bar no-print hidden" id="footer">
-  <button class="fin" id="btn-fin" disabled onclick="goFin()">✓ FINALIZAR CONFERÊNCIA</button>
+  <button class="fin" id="btn-fin" data-mode="fin" disabled onclick="foot()">✓ FINALIZAR CONFERÊNCIA</button>
 </div>
 
 <!-- ============ TELA DO USUÁRIO ============ -->
@@ -550,10 +554,31 @@ document.getElementById("inp-user").addEventListener("keydown",e=>{ if(e.key==="
 function go(id){
   document.querySelectorAll("section.screen").forEach(s=>s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
-  document.getElementById("footer").classList.toggle("hidden", id!=="scr-bob");
+  const ft = document.getElementById("footer"), btn = document.getElementById("btn-fin");
+  /* rodapé: tela principal = FINALIZAR · tela de bobinas = TROCAR vínculo */
+  if(id==="scr-main"){
+    btn.dataset.mode = "fin";
+    btn.textContent = "✓ FINALIZAR CONFERÊNCIA";
+    btn.classList.remove("troc");
+    btn.disabled = totalBob()===0;
+    ft.classList.remove("hidden");
+  } else if(id==="scr-bob"){
+    btn.dataset.mode = "trocar";
+    btn.textContent = "🔁 TROCAR VÍNCULO / LER OUTRO";
+    btn.classList.add("troc");
+    btn.disabled = false;
+    ft.classList.remove("hidden");
+  } else {
+    ft.classList.add("hidden");
+  }
+  if(id==="scr-main") renderMainVincs();
   window.scrollTo(0,0);
   if(id==="scr-op") setTimeout(()=>document.getElementById("inp-op").focus(),200);
   focusCollector();
+}
+function foot(){
+  if(document.getElementById("btn-fin").dataset.mode==="fin") goFin();
+  else go("scr-main");           // "trocar" = volta pra principal e lê outro romaneio/OP
 }
 function goOP(){ go("scr-op"); }
 
@@ -828,32 +853,69 @@ function simulacao(){
 function renderVincCard(){
   const card = document.getElementById("vinc-card");
   const g = gA();
-  const extras = grupos.length>1 ? ` · +${grupos.length-1} vínculo(s)` : "";
   if(g && g.tipo==="ROM"){
     card.innerHTML = `
-      <div class="ico">🧾</div>
-      <div class="grow">
-        <div class="t">${g.cod}</div>
-        <div class="d">${g.dados.cliente} · ${g.dados.destino}${extras}</div>
-      </div>
-      <button class="mini-btn" onclick="go('scr-main')">Trocar</button>`;
+      <div class="grow" style="text-align:center">
+        <div class="d" style="font-weight:700;color:var(--muted);font-size:11px;letter-spacing:.6px">ROMANEIO</div>
+        <div class="vbig">${g.cod}</div>
+        <div class="d">${g.dados.cliente} · ${g.dados.destino}</div>
+      </div>`;
   } else if(g){
     card.innerHTML = `
-      <div class="ico">⚙️</div>
-      <div class="grow">
-        <div class="t">OP ${g.cod}</div>
-        <div class="d">Sem romaneio · bobinas vinculadas à OP${extras}</div>
-      </div>
-      <button class="mini-btn" onclick="go('scr-main')">Trocar</button>`;
+      <div class="grow" style="text-align:center">
+        <div class="d" style="font-weight:700;color:var(--muted);font-size:11px;letter-spacing:.6px">OP · SEM ROMANEIO</div>
+        <div class="vbig">${g.cod}</div>
+        <div class="d">Bobinas vinculadas a esta OP</div>
+      </div>`;
   } else {
     card.innerHTML = `
       <div class="ico off">🧾</div>
       <div class="grow">
         <div class="t">Nenhum vínculo</div>
         <div class="d">Leia um romaneio ou informe uma OP</div>
-      </div>
-      <button class="mini-btn" onclick="go('scr-main')">Escolher</button>`;
+      </div>`;
   }
+}
+
+/* ============ VÍNCULOS LIDOS (expandível) NA TELA PRINCIPAL ============ */
+let mainExpandido = -1;
+function renderMainVincs(){
+  const box = document.getElementById("main-vincs");
+  if(!grupos.length){ box.innerHTML = ""; return; }
+  box.innerHTML = `
+    <div class="section-title">Nesta conferência (${grupos.length} vínculo${grupos.length>1?"s":""} · ${totalBob()} bobina${totalBob()>1?"s":""})</div>
+    ${grupos.map((g,i)=>`
+      <div class="hist-card">
+        <button class="hist-head" onclick="mainToggle(${i})">
+          <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
+          <div class="grow">
+            <div class="t">${g.cod}</div>
+            <div class="d">${g.tipo==="ROM" ? g.dados.cliente+" · "+g.dados.destino : "Sem romaneio"}</div>
+          </div>
+          <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
+          <span class="chev ${mainExpandido===i?"open":""}" id="mv-chev-${i}">▾</span>
+        </button>
+        <div class="hist-body ${mainExpandido===i?"":"hidden"}" id="mv-body-${i}">
+          ${g.bobinas.map((b,j)=>`
+            <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
+            <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span></div>`).join("")}
+          ${(g.qManual||0) ? `<div class="brow man"><span class="bn">✎</span>
+            <span class="bc">Informado manualmente (sem bip)</span><span class="bh">+${g.qManual}</span></div>` : ""}
+          ${!g.bobinas.length && !(g.qManual||0) ? '<div class="empty">Sem leituras neste vínculo ainda.</div>' : ""}
+          <div class="hist-actions">
+            <button class="ha-rep" onclick="selecionarVinc(${i})">📦 Ler bobinas aqui</button>
+          </div>
+        </div>
+      </div>`).join("")}`;
+}
+function mainToggle(i){
+  mainExpandido = (mainExpandido===i) ? -1 : i;
+  renderMainVincs();
+}
+function selecionarVinc(i){
+  gAtual = i;
+  renderVincCard();
+  go("scr-bob");
 }
 function bump(){
   ["ct-num","cam-cnt"].forEach(id=>{
@@ -889,7 +951,10 @@ function render(){
   renderVincCard();
   updateFin();
 }
-function updateFin(){ document.getElementById("btn-fin").disabled = totalBob()===0; }
+function updateFin(){
+  const btn = document.getElementById("btn-fin");
+  if(btn.dataset.mode==="fin") btn.disabled = totalBob()===0;   // trocar nunca fica desabilitado
+}
 
 /* ============ TELA DE FINALIZAR ============ */
 function durMin(rec){
@@ -1046,7 +1111,7 @@ function histReport(i){ renderReport(hist[i]); go("scr-rep"); }
 
 /* ============ NOVA CONFERÊNCIA ============ */
 function novaConf(){
-  grupos=[]; gAtual=-1; dups=0; seq=0; feedLog=[]; inicio=null; lastCode=""; camMode=null;
+  grupos=[]; gAtual=-1; dups=0; seq=0; feedLog=[]; inicio=null; lastCode=""; camMode=null; mainExpandido=-1;
   render();
   go("scr-main");
 }
@@ -1084,5 +1149,5 @@ else { setModo("camera"); }
 loadHist(); seedHist();
 renderUser(); render(); go("scr-main");
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a22c54fc6afbf243',t:'MTc4NTMzMDI5Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
