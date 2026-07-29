@@ -370,7 +370,6 @@ section.screen.active{display:block}
   <div class="counter">
     <div class="num" id="ct-num">0</div>
     <div class="lbl">bobinas<br>neste romaneio</div>
-    <div class="dup"><b id="ct-dup">0</b><span>duplicadas</span></div>
   </div>
 
   <div class="section-title">Últimas leituras</div>
@@ -474,14 +473,14 @@ let operador = "";
    Cada grupo guarda suas próprias bobinas. */
 let grupos = [];        // {tipo:'ROM'|'OP', cod, dados|null, bobinas:[{cod,hora}], qManual:0}
 let gAtual = -1;        // índice do vínculo apontado agora
-let dups = 0, seq = 0, feedLog = [], inicio = null;
+let dups = 0, seq = 0, inicio = null;
 
 /* ============ PERSISTÊNCIA (localStorage) ============ */
 const STATE_KEY = "confere_state_v1";
 function saveState(){
   try{
     localStorage.setItem(STATE_KEY, JSON.stringify({
-      grupos, gAtual, dups, seq, feedLog,
+      grupos, gAtual, dups, seq,
       inicio: inicio ? inicio.toISOString() : null,
       operador, modo
     }));
@@ -495,7 +494,6 @@ function loadState(){
     gAtual  = (s.gAtual!=null) ? s.gAtual : (grupos.length?grupos.length-1:-1);
     dups    = s.dups || 0;
     seq     = s.seq  || 0;
-    feedLog = s.feedLog || [];
     inicio  = s.inicio ? new Date(s.inicio) : null;
     operador = s.operador || "";
     if(s.modo) setModo(s.modo);
@@ -657,15 +655,12 @@ function onBobina(code){
   if(dono){
     dups++;
     feedback("warn","Duplicada!", code + (dono!==g ? " — já lida em "+dono.cod : " já foi lida"));
-    feedLog.unshift({cod:code,hora,dup:true});
   } else {
     seq++;
     g.bobinas.push({cod:code,hora});
     feedback("ok","✓ Bobina conferida", code+" → "+g.cod);
-    feedLog.unshift({seq,cod:code,hora,dup:false,dest:g.cod});
     bump();
   }
-  feedLog = feedLog.slice(0,30);
   render();
 }
 
@@ -683,9 +678,6 @@ function saveQtd(){
   if(!v || v<1 || v>9999){ feedback("warn","Quantidade inválida","digite um número maior que zero"); return; }
   g.qManual = (g.qManual||0) + v;
   if(!inicio) inicio = new Date();
-  const hora = horaAgora();
-  feedLog.unshift({qtd:v,hora,manual:true,dest:g.cod});
-  feedLog = feedLog.slice(0,30);
   feedback("ok","✓ +"+v+" unidade"+(v>1?"s":""), "somada manualmente em "+g.cod);
   bump(); closeQtd(); render();
 }
@@ -866,6 +858,14 @@ function autoSubmit(inp){
 function focusCollector(){
   if(modo!=="coletor") return;
   if(!document.getElementById("cam").classList.contains("hidden")) return;
+  /* não rouba o foco/teclado quando uma tela de digitação está aberta */
+  if(!document.getElementById("user-ov").classList.contains("hidden")) return;
+  if(!document.getElementById("qtd-ov").classList.contains("hidden")) return;
+  if(document.getElementById("scr-op").classList.contains("active")) return;
+  if(document.getElementById("scr-fin").classList.contains("active")) return;
+  /* se já existe outro input com foco, não interrompe a digitação */
+  const ae = document.activeElement;
+  if(ae && ae.tagName==="INPUT" && ae.id!=="inp-home" && ae.id!=="inp-bob") return;
   const id = document.getElementById("scr-bob").classList.contains("active") ? "inp-bob" :
              document.getElementById("scr-main").classList.contains("active") ? "inp-home" : null;
   if(id) document.getElementById(id).focus();
@@ -948,25 +948,17 @@ function vincCount(){ const g=gA(); return g ? g.bobinas.length+(g.qManual||0) :
 function refreshCamCnt(){ document.getElementById("cam-cnt").textContent = vincCount(); }
 function render(){
   document.getElementById("ct-num").textContent = vincCount();
-  document.getElementById("ct-dup").textContent = dups;
   refreshCamCnt();
+  /* Últimas leituras: só bobinas do vínculo aberto no momento */
+  const g = gA();
   const list = document.getElementById("scanlist");
-  list.innerHTML = feedLog.length ? feedLog.map(f=>{
-    if(f.manual) return `
+  const ult = g ? g.bobinas.slice(-30).reverse() : [];
+  list.innerHTML = ult.length ? ult.map((b,j)=>`
       <div class="scan-row">
-        <div class="n man">✎</div>
-        <div class="c">Qtd. informada: +${f.qtd} → ${f.dest}</div>
-        <div class="tag man">manual</div>
-        <div class="h">${f.hora}</div>
-      </div>`;
-    return `
-      <div class="scan-row">
-        <div class="n ${f.dup?"warn":""}">${f.dup?"!":String(f.seq).padStart(2,"0")}</div>
-        <div class="c">${f.cod}</div>
-        <div class="tag ${f.dup?"warn":"ok"}">${f.dup?"duplicada":"lida"}</div>
-        <div class="h">${f.hora}</div>
-      </div>`;
-  }).join("") : '<div class="empty">Nenhuma leitura ainda.</div>';
+        <div class="n">${String(g.bobinas.length-j).padStart(2,"0")}</div>
+        <div class="c">${b.cod}</div>
+        <div class="h">${b.hora}</div>
+      </div>`).join("") : '<div class="empty">Nenhuma leitura ainda.</div>';
   renderVincCard();
   updateFin();
   saveState();                 // tudo fica salvo no localStorage automaticamente
@@ -1002,8 +994,10 @@ function renderFin(){
         <div><b>Duração:</b> ${durMin(rec)} min</div>
         <div><b>Quantidade de romaneios / OP's:</b> ${nRom} / ${nOP}</div>
         <div><b>Bobinas / pacotes:</b> ${totalBob()} (lidos ${totalLidas()} + informados ${totalMan()})</div>
-        ${dups?`<div><b>Leituras duplicadas ignoradas:</b> ${dups}</div>`:""}
       </div>
+    </div>
+    <div class="entry" style="max-width:none;margin-top:4px">
+      <input id="inp-nome-conf" autocomplete="off" placeholder="Nome da conferência (ex.: Romaneio do caminhão 123)" style="text-transform:none;letter-spacing:.5px;margin-top:0">
     </div>
     <div class="section-title">Vínculos e leituras</div>
     ${grupos.map((g,i)=>`
@@ -1035,8 +1029,12 @@ function renderFin(){
 /* ============ CONFIRMAR → salva no histórico + relatório ============ */
 function confirmFin(){
   const fim = new Date();
+  const first = grupos[0];
+  const nomePadrao = first ? first.cod + (grupos.length>1 ? " +"+(grupos.length-1) : "") : "Conferência";
+  const nome = (document.getElementById("inp-nome-conf").value.trim() || nomePadrao);
   const rec = {
     id: fim.getTime(),
+    nome,
     operador: operador || "não informado",
     modo, dups,
     inicio: (inicio||fim).toISOString(), fim: fim.toISOString(),
@@ -1062,7 +1060,7 @@ function renderReport(rec){
   const totLid = rec.grupos.reduce((a,g)=>a+g.bobinas.length,0);
   document.getElementById("report").innerHTML = `
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
-      <div><h2>Relatório de Conferência</h2><p style="font-size:12px;color:var(--muted)">Gerado em ${fim.toLocaleString("pt-BR")}</p></div>
+      <div><h2>Relatório de Conferência${rec.nome?": "+rec.nome:""}</h2><p style="font-size:12px;color:var(--muted)">Gerado em ${fim.toLocaleString("pt-BR")}</p></div>
       <span style="background:var(--okbg);color:var(--ok);font-size:13px;font-weight:800;border-radius:999px;padding:6px 12px">✓ CONCLUÍDO</span>
     </div>
     <div class="total"><b>${totBob}</b><span>bobinas / pacotes conferidos</span></div>
@@ -1072,7 +1070,6 @@ function renderReport(rec){
       <div><b>Quantidade de romaneios / OP's:</b> ${nRom} / ${nOP}</div>
       <div><b>Bobinas / pacotes:</b> ${totBob} (lidos ${totLid} + informados ${totBob-totLid})</div>
       <div><b>Leitura via:</b> ${rec.modo==="camera"?"Câmera":"Coletor de dados"}</div>
-      ${rec.dups?`<div><b>Leituras duplicadas ignoradas:</b> ${rec.dups}</div>`:""}
     </div>
     <table class="stable">
       <thead><tr><th style="width:38px">#</th><th>Vínculo</th><th class="num" style="width:110px">Qtd.</th></tr></thead>
@@ -1103,7 +1100,6 @@ function exportCSV(){
     ["Quantidade de romaneios / OP's", nRom+" / "+nOP],
     ["Bobinas / pacotes", totBob+" (lidos "+totLid+" + informados "+(totBob-totLid)+")"],
     ["Leitura via", rec.modo==="camera"?"Câmera":"Coletor de dados"],
-    ...(rec.dups ? [["Leituras duplicadas ignoradas", rec.dups]] : []),
     [],
     ["#","Vínculo","Qtd."],
     ...rec.grupos.map((g,i)=>[String(i+1).padStart(2,"0"), (g.tipo==="ROM"?"Romaneio ":"OP ")+g.cod, g.bobinas.length+(g.qManual||0)]),
@@ -1130,7 +1126,7 @@ function renderHist(){
   box.innerHTML = hist.map((h,i)=>{
     const tot = h.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
     const first = h.grupos[0];
-    const titulo = h.grupos.length>1 ? first.cod + " +" + (h.grupos.length-1) : first.cod;
+    const titulo = h.nome || (h.grupos.length>1 ? first.cod + " +" + (h.grupos.length-1) : first.cod);
     const fimTxt = new Date(h.fim).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
     return `
     <div class="hist-card">
@@ -1153,7 +1149,6 @@ function renderHist(){
           ${(g.qManual||0)?`<div class="brow man"><span class="bn">✎</span>
             <span class="bc">Informado manualmente</span><span class="bh">+${g.qManual}</span></div>`:""}
         `).join("")}
-        ${h.dups?`<div class="dups-line">⚠ ${h.dups} leitura(s) duplicada(s) ignorada(s)</div>`:""}
         <div class="hist-actions">
           <button class="ha-rep" onclick="histReport(${i})">📄 Ver relatório</button>
           <button class="ha-del" onclick="histDel(${i})">🗑 Excluir</button>
@@ -1171,7 +1166,7 @@ function histReport(i){ renderReport(hist[i]); go("scr-rep"); }
 
 /* ============ NOVA CONFERÊNCIA ============ */
 function novaConf(){
-  grupos=[]; gAtual=-1; dups=0; seq=0; feedLog=[]; inicio=null; lastCode=""; camMode=null; mainExpandido=-1; finExpandido=-1;
+  grupos=[]; gAtual=-1; dups=0; seq=0; inicio=null; lastCode=""; camMode=null; mainExpandido=-1; finExpandido=-1;
   clearState();
   render();
   go("scr-main");
@@ -1214,5 +1209,5 @@ if(!modo){
 loadHist(); seedHist();
 renderUser(); render(); go("scr-main");
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a22cd4037e16f1d3',t:'MTc4NTMzNTQ5Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
