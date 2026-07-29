@@ -26,7 +26,7 @@ button{font:inherit;cursor:pointer;border:none;background:none;-webkit-tap-highl
 input{font:inherit}
 .hidden{display:none!important}
 
-/* ============ TOPO: alternador de modo + usuário ============ */
+/* ============ TOPO ============ */
 .appbar{
   position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;
   padding:10px 12px;padding-top:max(10px, env(safe-area-inset-top));
@@ -45,7 +45,6 @@ input{font:inherit}
   padding:11px 14px;font-size:13px;font-weight:700;white-space:nowrap;
   max-width:38vw;overflow:hidden;text-overflow:ellipsis;
 }
-/* exclusividade dos modos: um desativa o outro */
 body.camera .if-coletor{display:none!important}
 body.coletor .if-camera{display:none!important}
 
@@ -53,17 +52,17 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 120px;width:100%}
 section.screen{display:none}
 section.screen.active{display:block}
 
-/* passo a passo */
 .steps{display:flex;gap:8px;margin-bottom:14px}
 .step{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center;font-size:11.5px;color:var(--muted);font-weight:600}
 .step b{display:block;font-size:16px;margin-bottom:2px}
 
-/* card do vínculo (romaneio ou OP) */
+/* card do vínculo atual */
 .status{
   background:var(--card);border-radius:16px;box-shadow:var(--shadow);
   padding:14px;display:flex;align-items:center;gap:12px;min-width:0;
 }
 .status .ico{width:44px;height:44px;flex:none;border-radius:12px;background:var(--okbg);display:flex;align-items:center;justify-content:center;font-size:22px}
+.status .ico.off{background:#eef2f7}
 .status .grow{flex:1;min-width:0}
 .status .t{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .status .d{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -84,6 +83,11 @@ section.screen.active{display:block}
 .b-semrom{min-height:72px;font-size:16px;color:#31507c;background:#fff;border:2.5px dashed #b9c7d6;box-shadow:none}
 .b-semrom .bico{font-size:24px}
 .b-op{background:linear-gradient(135deg,#0e9f5d,#0b7a48)}
+.b-qtd{min-height:72px;font-size:16px;color:#0b7a48;background:#fff;border:2.5px dashed #7cc7a3;box-shadow:none}
+.b-qtd .bico{font-size:24px}
+.b-hist{min-height:72px;font-size:16px;background:#fff;color:#31507c;border:2.5px solid #c3d2e2;box-shadow:none;justify-content:flex-start;text-align:left;padding:14px 16px}
+.b-hist .bico{font-size:24px}
+.b-hist .hcnt{margin-left:auto;background:var(--brand);color:#fff;border-radius:999px;min-width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;padding:0 8px;flex:none}
 
 /* contador */
 .counter{
@@ -93,11 +97,12 @@ section.screen.active{display:block}
 .counter .num{font-size:52px;font-weight:800;line-height:1;color:var(--ok);transition:transform .15s}
 .counter .num.bump{transform:scale(1.25)}
 .counter .lbl{font-size:14px;font-weight:700}
+.counter .lbl span{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-top:3px}
 .counter .dup{margin-left:auto;text-align:center;background:var(--warnbg);border-radius:12px;padding:10px 14px}
 .counter .dup b{display:block;font-size:22px;color:var(--warn)}
 .counter .dup span{font-size:11px;color:var(--warn)}
 
-/* campo do coletor de dados */
+/* coletor */
 .collector{margin-top:14px}
 .collector input{
   width:100%;border:2px dashed #b9c7d6;border-radius:14px;background:#fbfdff;padding:16px;
@@ -113,16 +118,16 @@ section.screen.active{display:block}
 .toggles label{display:flex;align-items:center;gap:6px;user-select:none}
 .toggles input{width:18px;height:18px}
 
-/* histórico */
 .section-title{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:18px 4px 8px}
 .scanlist{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:6px 14px}
 .scan-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);min-width:0}
 .scan-row:last-child{border-bottom:none}
 .scan-row .n{width:26px;height:26px;flex:none;border-radius:8px;background:var(--okbg);color:var(--ok);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .scan-row .n.warn{background:var(--warnbg);color:var(--warn)}
+.scan-row .n.man{background:#e8efff;color:var(--brand2)}
 .scan-row .c{font-weight:800;font-size:14px;letter-spacing:.4px;word-break:break-all;flex:1;min-width:0}
-.scan-row .tag{font-size:10.5px;font-weight:800;text-transform:uppercase}
-.scan-row .tag.ok{color:var(--ok)} .scan-row .tag.warn{color:var(--warn)}
+.scan-row .tag{font-size:10.5px;font-weight:800;text-transform:uppercase;white-space:nowrap}
+.scan-row .tag.ok{color:var(--ok)} .scan-row .tag.warn{color:var(--warn)} .scan-row .tag.man{color:var(--brand2)}
 .scan-row .h{font-size:11px;color:var(--muted);white-space:nowrap}
 .empty{padding:16px 4px;font-size:13px;color:var(--muted);text-align:center}
 
@@ -140,7 +145,7 @@ section.screen.active{display:block}
 }
 .footer-bar .fin:disabled{background:#b9c7d6}
 
-/* ============ TELA DE ENTRADA (OP / usuário) ============ */
+/* telas de entrada (OP / usuário / quantidade) */
 .entry{max-width:460px;margin:0 auto}
 .entry .card-e{background:#fff;border-radius:18px;box-shadow:var(--shadow);padding:24px 18px;text-align:center}
 .entry .eico{font-size:46px}
@@ -152,6 +157,8 @@ section.screen.active{display:block}
   text-align:center;outline:none;
 }
 .entry input:focus{box-shadow:0 0 0 4px rgba(14,111,221,.16);background:#fff}
+.user-ov{position:fixed;inset:0;z-index:120;background:#eef2f7;overflow-y:auto}
+#inp-qtd{font-size:32px;letter-spacing:4px;text-transform:none}
 
 /* ============ CÂMERA TELA CHEIA ============ */
 #cam{position:fixed;inset:0;z-index:100;background:#000;display:flex;flex-direction:column}
@@ -173,7 +180,6 @@ section.screen.active{display:block}
 }
 .cam-frame::after{content:"";position:absolute;left:8%;right:8%;top:50%;height:2px;background:rgba(255,80,80,.9);box-shadow:0 0 8px rgba(255,60,60,.9);animation:sweep 2s ease-in-out infinite}
 @keyframes sweep{0%,100%{top:22%}50%{top:78%}}
-
 .cam-status{
   position:absolute;z-index:3;left:50%;top:46%;transform:translate(-50%,-50%);
   color:#fff;text-align:center;font-size:15px;font-weight:700;line-height:1.5;
@@ -181,7 +187,6 @@ section.screen.active{display:block}
 }
 .spin{width:34px;height:34px;border-radius:50%;border:4px solid #ffffff40;border-top-color:#fff;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-
 .cam-fallback{
   position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;
   text-align:center;color:#fff;padding:30px;gap:10px;background:rgba(0,0,0,.6);
@@ -193,7 +198,6 @@ section.screen.active{display:block}
   margin-top:8px;background:#fff;color:#17293d;font-weight:800;border-radius:14px;
   padding:14px 22px;font-size:15px;min-width:240px;min-height:54px;
 }
-
 .cam-bottom{
   margin-top:auto;position:relative;z-index:5;padding:16px;display:grid;gap:10px;
   padding-bottom:max(16px, env(safe-area-inset-bottom));
@@ -215,21 +219,33 @@ section.screen.active{display:block}
 #flash.warn{background:rgba(216,127,10,.45)} #flash.warn .box{background:rgba(170,95,5,.95)}
 #flash.err{background:rgba(211,53,43,.45)} #flash.err .box{background:rgba(160,30,24,.95)}
 
-/* ============ MODAL ============ */
-.modal{position:fixed;inset:0;z-index:150;background:rgba(10,25,45,.55);display:flex;align-items:flex-end;justify-content:center}
-.modal .sheet{background:#fff;width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:22px 20px 20px}
-.sheet h3{font-size:17px;margin-bottom:10px}
-.sheet .row{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:8px 0;border-bottom:1px solid var(--line)}
-.sheet .row b{font-size:15px;text-align:right}
-.sheet .actions{display:grid;gap:10px;margin-top:16px}
-.sheet .btn-s{width:100%;min-height:58px;border-radius:14px;font-size:16px;font-weight:800}
-.btn-ghost{background:#eef2f7;color:var(--ink)}
-.btn-ok{background:var(--ok);color:#fff}
+/* ============ HISTÓRICO / GRUPOS ============ */
+.hist-card{background:#fff;border-radius:16px;box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}
+.hist-head{width:100%;display:flex;align-items:center;gap:11px;padding:13px 14px;text-align:left}
+.hico{width:40px;height:40px;flex:none;border-radius:10px;background:var(--okbg);display:flex;align-items:center;justify-content:center;font-size:20px}
+.hico.op{background:#e8efff}
+.hist-head .grow{flex:1;min-width:0}
+.hist-head .t{font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-head .d{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbadge{background:var(--okbg);color:var(--ok);font-weight:800;border-radius:10px;padding:7px 11px;font-size:13px;flex:none}
+.chev{color:var(--muted);font-size:13px;flex:none;transition:transform .2s}
+.chev.open{transform:rotate(180deg)}
+.hist-body{border-top:1px solid var(--line);padding:6px 14px 12px;background:#f8fafc}
+.gline{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;color:var(--ink);padding:10px 0 4px;border-bottom:1.5px solid var(--line);margin-bottom:2px}
+.gline .gico{font-size:15px}
+.gline .gcnt{margin-left:auto;font-size:11.5px;color:var(--ok);background:var(--okbg);border-radius:8px;padding:4px 8px}
+.brow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.brow .bn{width:22px;height:22px;flex:none;border-radius:6px;background:#e2e8f0;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;color:#475569}
+.brow .bc{flex:1;min-width:0;font-weight:700;letter-spacing:.3px;word-break:break-all}
+.brow .bh{font-size:11px;color:var(--muted);white-space:nowrap}
+.brow.man .bc{color:var(--brand2)}
+.dups-line{font-size:11.5px;color:var(--warn);font-weight:700;padding-top:7px}
+.hist-actions{display:flex;gap:8px;margin-top:12px}
+.hist-actions button{flex:1;min-height:48px;border-radius:12px;font-size:13.5px;font-weight:800}
+.ha-rep{background:var(--brand);color:#fff}
+.ha-del{background:var(--errbg);color:var(--err)}
 
-/* overlay de usuário (tela cheia) */
-.user-ov{position:fixed;inset:0;z-index:120;background:#eef2f7;overflow-y:auto}
-
-/* ============ RELATÓRIO ============ */
+/* ============ RELATÓRIO / FINALIZAR ============ */
 .report{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:20px 16px;overflow-wrap:break-word}
 .report h2{font-size:18px}
 .report .rmeta{display:grid;gap:5px;font-size:13.5px;margin:14px 0;color:#334155}
@@ -249,7 +265,7 @@ section.screen.active{display:block}
 
 @media print{
   body{background:#fff}
-  .appbar,.footer-bar,#flash,#cam,.modal,.user-ov,.no-print{display:none!important}
+  .appbar,.footer-bar,#flash,#cam,.user-ov,.no-print{display:none!important}
   main{padding:0;max-width:none}
   .report{box-shadow:none;border-radius:0}
 }
@@ -286,9 +302,14 @@ section.screen.active{display:block}
       <span class="bico">📦</span>
       <span>LER BOBINAS SEM ROMANEIO<small>vamos pedir o número da OP antes</small></span>
     </button>
+    <button class="bigbtn b-hist" onclick="goHist()">
+      <span class="bico">📋</span>
+      <span>CONFERÊNCIAS REALIZADAS<small>romaneios e OPs com as bobinas lidas</small></span>
+      <span class="hcnt" id="hist-count">0</span>
+    </button>
   </div>
 
-  <div class="demo-line no-print">Códigos de teste: <b onclick="onCode('ROM-2026-058412')">ROM-2026-058412</b></div>
+  <div class="demo-line no-print">Código de teste: <b onclick="onCode('ROM-2026-058412')">ROM-2026-058412</b></div>
 
   <div class="collector if-coletor no-print">
     <input id="inp-home" inputmode="none" autocomplete="off" placeholder="⌨️ BIPE O ROMANEIO (COLETOR)">
@@ -328,13 +349,17 @@ section.screen.active{display:block}
   <div class="bigbtns">
     <button class="bigbtn b-bob if-camera" onclick="openCam('bob')">
       <span class="bico">📦</span>
-      <span>LER BOBINA<small>leitura contínua — bipe várias seguidas</small></span>
+      <span>LER BOBINA<small>a câmera abre em tela cheia · leitura contínua</small></span>
+    </button>
+    <button class="bigbtn b-qtd" onclick="openQtd()">
+      <span class="bico">🔢</span>
+      <span>INFORMAR QUANTIDADE<small>digite a qtde de bobinas/pacotes sem bipar</small></span>
     </button>
   </div>
 
   <div class="counter">
     <div class="num" id="ct-num">0</div>
-    <div class="lbl">bobinas<br>conferidas</div>
+    <div class="lbl">bobinas na conferência<span id="ct-vinc">—</span></div>
     <div class="dup"><b id="ct-dup">0</b><span>duplicadas</span></div>
   </div>
 
@@ -344,7 +369,26 @@ section.screen.active{display:block}
   </div>
 
   <div class="section-title">Últimas leituras</div>
-  <div class="scanlist" id="scanlist"><div class="empty">Nenhuma bobina lida ainda.</div></div>
+  <div class="scanlist" id="scanlist"><div class="empty">Nenhuma leitura ainda.</div></div>
+</section>
+
+<!-- ============ TELA 3 · FINALIZAR ============ -->
+<section id="scr-fin" class="screen">
+  <button class="voltar no-print" onclick="go('scr-bob')">← voltar às leituras</button>
+  <div id="fin-body"></div>
+</section>
+
+<!-- ============ TELA · CONFERÊNCIAS REALIZADAS ============ -->
+<section id="scr-hist" class="screen">
+  <button class="voltar no-print" onclick="go('scr-main')">← início</button>
+  <div class="status" style="margin-bottom:12px">
+    <div class="ico">📋</div>
+    <div class="grow">
+      <div class="t">Conferências realizadas</div>
+      <div class="d">Toque em um item para ver os vínculos e as bobinas</div>
+    </div>
+  </div>
+  <div id="hist-list"></div>
 </section>
 
 <!-- ============ RELATÓRIO ============ -->
@@ -360,7 +404,7 @@ section.screen.active{display:block}
 
 <!-- rodapé -->
 <div class="footer-bar no-print hidden" id="footer">
-  <button class="fin" id="btn-fin" disabled onclick="askFinish()">✓ FINALIZAR CONFERÊNCIA</button>
+  <button class="fin" id="btn-fin" disabled onclick="goFin()">✓ FINALIZAR CONFERÊNCIA</button>
 </div>
 
 <!-- ============ TELA DO USUÁRIO ============ -->
@@ -374,6 +418,22 @@ section.screen.active{display:block}
       <div class="bigbtns">
         <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="saveUser()">✓ SALVAR</button>
         <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closeUser()">Voltar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TELA INFORMAR QUANTIDADE ============ -->
+<div id="qtd-ov" class="user-ov hidden" style="padding:14px">
+  <div class="entry">
+    <div class="card-e" style="margin-top:10px">
+      <div class="eico">🔢</div>
+      <h2>Informar quantidade</h2>
+      <p class="hint" id="qtd-vinc">—</p>
+      <input id="inp-qtd" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="0">
+      <div class="bigbtns">
+        <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="saveQtd()">✓ CONFIRMAR</button>
+        <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closeQtd()">Voltar</button>
       </div>
     </div>
   </div>
@@ -398,40 +458,67 @@ section.screen.active{display:block}
 <!-- ============ FLASH ============ -->
 <div id="flash"><div class="box"><div class="big" id="flash-ico">✓</div><div class="msg" id="flash-msg"></div><div class="code" id="flash-code"></div></div></div>
 
-<!-- ============ MODAL ============ -->
-<div id="modal" class="modal hidden">
-  <div class="sheet">
-    <h3>Finalizar conferência?</h3>
-    <div id="m-body"></div>
-    <div class="actions">
-      <button class="btn-s btn-ok" onclick="doFinish()">Confirmar e gerar relatório</button>
-      <button class="btn-s btn-ghost" onclick="modal(false)">Voltar</button>
-    </div>
-  </div>
-</div>
-
 <script>
-/* ============ MOCK: romaneios ============ */
+/* ============ MOCK: dados do romaneio (viriam do ERP) ============ */
 const ROMANEIOS = {
  "ROM-2026-058412":{ cliente:"Embalagens Vale S.A.", destino:"Guarulhos / SP", transp:"RotaForte Transp.", motorista:"J. Pereira · FZK-4A21" },
  "ROM-2026-058413":{ cliente:"Filmes Alfa Ltda.", destino:"S. José dos Campos / SP", transp:"TransCarga", motorista:"M. Souza · BRA-2E19" }
 };
 
 /* ============ ESTADO ============ */
-let modo = "camera";            // 'camera' | 'coletor'
-let operador = "";              // nome do usuário
-let rom = null;                 // romaneio vinculado
-let op = null;                  // OP vinculada (modo sem romaneio)
-let bobinas = [];
-let dups = 0, seq = 0;
-let feedLog = [];
-let inicio = null;
+let modo = "camera";
+let operador = "";
+/* Conferência pode ter VÁRIOS vínculos — romaneios e/ou OPs.
+   Cada grupo guarda suas próprias bobinas. */
+let grupos = [];        // {tipo:'ROM'|'OP', cod, dados|null, bobinas:[{cod,hora}], qManual:0}
+let gAtual = -1;        // índice do vínculo apontado agora
+let dups = 0, seq = 0, feedLog = [], inicio = null;
 
 let camMode = null, wakeLock = null, lastCode = "", lastT = 0;
 let camStream = null, detTimer = null, detecting = false;
 let html5 = null, camCheck = null;
 
-/* ============ MODO (câmera × coletor — um desativa o outro) ============ */
+/* helpers */
+function gA(){ return gAtual>=0 ? grupos[gAtual] : null; }
+function totalBob(){ return grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0); }
+function totalLidas(){ return grupos.reduce((a,g)=>a+g.bobinas.length,0); }
+function totalMan(){ return grupos.reduce((a,g)=>a+(g.qManual||0),0); }
+function horaAgora(){ return new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}); }
+
+/* ============ HISTÓRICO (localStorage) ============ */
+let hist = [];
+const HIST_KEY = "confere_hist_v2";
+function loadHist(){ try{ hist = JSON.parse(localStorage.getItem(HIST_KEY)) || []; }catch(e){ hist = []; } }
+function saveHistLS(){ try{ localStorage.setItem(HIST_KEY, JSON.stringify(hist)); }catch(e){} updateHistBadge(); }
+function updateHistBadge(){ document.getElementById("hist-count").textContent = hist.length; }
+function seedHist(){
+  if(hist.length) return;
+  const d1=new Date(); d1.setDate(d1.getDate()-1); d1.setHours(17,42,0,0);
+  const d1i=new Date(d1); d1i.setHours(17,25,0,0);
+  const d2=new Date(); d2.setHours(9,52,0,0);
+  const d2i=new Date(d2); d2i.setHours(9,10,0,0);
+  hist = [
+   { id:d2.getTime(), operador:"Maria Silva", modo:"coletor", dups:0,
+     inicio:d2i.toISOString(), fim:d2.toISOString(),
+     grupos:[
+      { tipo:"ROM", cod:"ROM-2026-058401",
+        dados:{cliente:"Plásticos Horizonte",destino:"Guarulhos / SP",transp:"RotaForte Transp.",motorista:"J. Pereira · FZK-4A21"},
+        bobinas:[{cod:"7898311722007",hora:"09:14"},{cod:"7898311722014",hora:"09:22"}], qManual:0 },
+      { tipo:"OP", cod:"OP-445501", dados:null,
+        bobinas:[{cod:"7898311722201",hora:"09:41"},{cod:"7898311722202",hora:"09:46"}], qManual:12 }
+     ]},
+   { id:d1.getTime(), operador:"Maria Silva", modo:"camera", dups:1,
+     inicio:d1i.toISOString(), fim:d1.toISOString(),
+     grupos:[
+      { tipo:"ROM", cod:"ROM-2026-058390",
+        dados:{cliente:"Embalagens Vale S.A.",destino:"Guarulhos / SP",transp:"RotaForte Transp.",motorista:"J. Pereira · FZK-4A21"},
+        bobinas:[{cod:"7898311711102",hora:"17:38"},{cod:"7898311711103",hora:"17:39"},{cod:"7898311711104",hora:"17:41"}], qManual:0 }
+     ]}
+  ];
+  saveHistLS();
+}
+
+/* ============ MODO (câmera × coletor) ============ */
 function setModo(m){
   if(m===modo) return;
   modo = m;
@@ -439,14 +526,12 @@ function setModo(m){
   document.body.classList.toggle("coletor", m==="coletor");
   document.getElementById("m-camera").classList.toggle("on", m==="camera");
   document.getElementById("m-coletor").classList.toggle("on", m==="coletor");
-  if(m!=="camera") closeCam();           // desliga a câmera ao trocar para coletor
+  if(m!=="camera") closeCam();
   focusCollector();
 }
 
 /* ============ USUÁRIO ============ */
-function renderUser(){
-  document.getElementById("chip-user").textContent = "👤 " + (operador || "usuário");
-}
+function renderUser(){ document.getElementById("chip-user").textContent = "👤 " + (operador || "usuário"); }
 function openUser(){
   document.getElementById("inp-user").value = operador;
   document.getElementById("user-ov").classList.remove("hidden");
@@ -456,8 +541,7 @@ function closeUser(){ document.getElementById("user-ov").classList.add("hidden")
 function saveUser(){
   const v = document.getElementById("inp-user").value.trim().replace(/\s+/g," ");
   if(!v){ feedback("warn","Informe um nome",""); return; }
-  operador = v;
-  renderUser(); closeUser();
+  operador = v; renderUser(); closeUser();
   feedback("ok","Operador definido", v);
 }
 document.getElementById("inp-user").addEventListener("keydown",e=>{ if(e.key==="Enter") saveUser(); });
@@ -480,26 +564,92 @@ function confirmOP(){
   onOP(v);
 }
 document.getElementById("inp-op").addEventListener("keydown",e=>{
-  if(e.key==="Enter"){ const v=e.target.value.trim().toUpperCase(); if(v){ onOP(v); } }
+  if(e.key==="Enter"){ const v=e.target.value.trim().toUpperCase(); if(v) onOP(v); }
 });
 function onOP(code){
-  const reabrirCam = (camMode==="op" || modo==="camera");   // captura antes do closeCam limpar
-  op = code;
-  if(!inicio) inicio = new Date();
+  addVinculo("OP", code, null);
   document.getElementById("inp-op").value = "";
-  renderVincCard();
-  feedback("ok","OP vinculada", code);
-  closeCam();
-  go("scr-bob");
-  if(reabrirCam){ setTimeout(()=>openCam("bob"), 450); }
+  closeCam(); go("scr-bob");          // NÃO abre câmera — abre só no botão LER BOBINA
 }
+
+/* ============ VÍNCULOS (romaneio ou OP) ============ */
+function addVinculo(tipo, code, dados){
+  if(!inicio) inicio = new Date();
+  let g = grupos.find(x=>x.tipo===tipo && x.cod===code);
+  if(g){
+    gAtual = grupos.indexOf(g);
+    renderVincCard();
+    feedback("warn", (tipo==="ROM"?"Romaneio já lido":"OP já lida"), "seguindo com este vínculo");
+  } else {
+    grupos.push({ tipo, cod:code, dados, bobinas:[], qManual:0 });
+    gAtual = grupos.length-1;
+    renderVincCard();
+    feedback("ok", (tipo==="ROM"?"Romaneio aberto":"OP vinculada"), code);
+  }
+  render();
+}
+
+function onRomaneio(code){
+  // qualquer código de barras lido aqui é o romaneio; dados viriam do ERP (mock)
+  const d = ROMANEIOS[code] || { cliente:"— (virá do ERP)", destino:"—", transp:"—", motorista:"—" };
+  addVinculo("ROM", code, d);
+  closeCam(); go("scr-bob");          // NÃO abre câmera automática
+}
+
+function onBobina(code){
+  const g = gA();
+  if(!g){ feedback("warn","Leia o romaneio primeiro","ou informe uma OP"); return; }
+  if(!inicio) inicio = new Date();
+  const hora = horaAgora();
+  // duplicidade considera a conferência inteira (todos os vínculos)
+  const dono = grupos.find(x=>x.bobinas.some(b=>b.cod===code));
+  if(dono){
+    dups++;
+    feedback("warn","Duplicada!", code + (dono!==g ? " — já lida em "+dono.cod : " já foi lida"));
+    feedLog.unshift({cod:code,hora,dup:true});
+  } else {
+    seq++;
+    g.bobinas.push({cod:code,hora});
+    feedback("ok","✓ Bobina conferida", code+" → "+g.cod);
+    feedLog.unshift({seq,cod:code,hora,dup:false,dest:g.cod});
+    bump();
+  }
+  feedLog = feedLog.slice(0,30);
+  render();
+}
+
+/* ============ INFORMAR QUANTIDADE (sem bip) ============ */
+function openQtd(){
+  const g = gA();
+  if(!g){ feedback("warn","Leia o romaneio primeiro","ou informe uma OP"); return; }
+  document.getElementById("qtd-vinc").textContent =
+    "Será somada ao vínculo atual: " + (g.tipo==="ROM"?"🧾 ":"⚙️ ") + g.cod +
+    " · já tem " + (g.bobinas.length + (g.qManual||0)) + " un.";
+  document.getElementById("inp-qtd").value = "";
+  document.getElementById("qtd-ov").classList.remove("hidden");
+  setTimeout(()=>document.getElementById("inp-qtd").focus(),150);   // abre teclado numérico
+}
+function closeQtd(){ document.getElementById("qtd-ov").classList.add("hidden"); focusCollector(); }
+function saveQtd(){
+  const g = gA(); if(!g){ closeQtd(); return; }
+  const v = parseInt(document.getElementById("inp-qtd").value, 10);
+  if(!v || v<1 || v>9999){ feedback("warn","Quantidade inválida","digite um número maior que zero"); return; }
+  g.qManual = (g.qManual||0) + v;
+  if(!inicio) inicio = new Date();
+  const hora = horaAgora();
+  feedLog.unshift({qtd:v,hora,manual:true,dest:g.cod});
+  feedLog = feedLog.slice(0,30);
+  feedback("ok","✓ +"+v+" unidade"+(v>1?"s":""), "somada manualmente em "+g.cod);
+  bump(); closeQtd(); render();
+}
+document.getElementById("inp-qtd").addEventListener("keydown",e=>{ if(e.key==="Enter") saveQtd(); });
 
 /* ============ CÂMERA ============ */
 function camEl(){ return document.getElementById("cam"); }
 function timeoutP(ms){ return new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), ms)); }
 
 async function openCam(mode){
-  if(modo!=="camera"){                       // câmera desativada quando o coletor está ativo
+  if(modo!=="camera"){
     feedback("warn","Câmera desativada","Modo coletor ativo no topo");
     focusCollector(); return;
   }
@@ -507,20 +657,14 @@ async function openCam(mode){
   camEl().classList.remove("hidden");
   document.querySelectorAll(".cam-fallback").forEach(e=>e.remove());
   document.getElementById("cam-mode").textContent =
-    mode==="rom" ? "1/2 · Aponte para o ROMANEIO" :
-    mode==="op"  ? "⚙️ Aponte para a OP" : "2/2 · Lendo BOBINAS (contínuo)";
+    mode==="rom" ? "1 · Aponte para o ROMANEIO" :
+    mode==="op"  ? "⚙️ Aponte para a OP" : "2 · Lendo BOBINAS (contínuo)";
   refreshCamCnt();
   showStatus(true, "Iniciando câmera…");
   try{ wakeLock = await navigator.wakeLock?.request("screen"); }catch(e){}
-
-  if("BarcodeDetector" in window && navigator.mediaDevices?.getUserMedia){
-    startNativeCam();
-  } else {
-    startLibCam({facingMode:"environment"});     // fallback p/ navegadores sem BarcodeDetector
-  }
+  if("BarcodeDetector" in window && navigator.mediaDevices?.getUserMedia) startNativeCam();
+  else startLibCam({facingMode:"environment"});
 }
-
-/* --- caminho nativo: getUserMedia + BarcodeDetector (mais confiável) --- */
 async function startNativeCam(){
   stopStreams();
   document.getElementById("cam-video").classList.remove("hidden");
@@ -537,14 +681,10 @@ async function startNativeCam(){
     await v.play();
     showStatus(false);
     let det;
-    try{
-      det = new BarcodeDetector({formats:["code_128","code_39","code_93","ean_13","ean_8","upc_a","upc_e","itf","codabar","qr_code","data_matrix"]});
-    }catch(e){ det = new BarcodeDetector(); }
+    try{ det = new BarcodeDetector({formats:["code_128","code_39","code_93","ean_13","ean_8","upc_a","upc_e","itf","codabar","qr_code","data_matrix"]}); }
+    catch(e){ det = new BarcodeDetector(); }
     detectLoop(det, v);
-  }catch(e){
-    stopStreams();
-    camFail(e);
-  }
+  }catch(e){ stopStreams(); camFail(e); }
 }
 async function detectLoop(det, v){
   if(!camStream) return;
@@ -564,8 +704,6 @@ function stopStreams(){
   const v = document.getElementById("cam-video");
   try{ v.pause(); }catch(e){} v.srcObject = null;
 }
-
-/* --- fallback: biblioteca html5-qrcode (Safari antigo etc.) --- */
 async function startLibCam(constraint){
   stopStreams(); stopLib();
   if(!window.Html5Qrcode){ camFail(new Error("sem-suporte")); return; }
@@ -573,12 +711,9 @@ async function startLibCam(constraint){
   try{
     html5 = new Html5Qrcode("cam-reader");
     await Promise.race([
-      html5.start(
-        constraint,
+      html5.start(constraint,
         { fps:12, qrbox:(w,h)=>({ width:Math.min(w*0.9,340), height:170 }) },
-        (decoded)=>{ onCode(decoded); },
-        ()=>{}
-      ),
+        (decoded)=>{ onCode(decoded); }, ()=>{}),
       timeoutP(9000)
     ]);
     showStatus(false);
@@ -588,7 +723,7 @@ async function startLibCam(constraint){
       if(!v || !v.videoWidth){ stopLib(); camFail(new Error("sem-imagem")); }
     }, 2500);
   }catch(e){
-    if(constraint && constraint.facingMode){ startLibCam(true); }   // tenta sem exigir traseira
+    if(constraint && constraint.facingMode) startLibCam(true);
     else { stopLib(); camFail(e); }
   }
 }
@@ -596,17 +731,13 @@ async function stopLib(){
   clearTimeout(camCheck);
   if(html5){ try{ await html5.stop(); }catch(e){} try{ html5.clear(); }catch(e){} html5=null; }
 }
-
 function showStatus(on, txt){
   const s = document.getElementById("cam-status");
   s.style.display = on ? "flex" : "none";
   if(txt) document.getElementById("cam-status-txt").textContent = txt;
 }
-
-/* --- erro: agora mostra o MOTIVO na tela, nunca fica só preto --- */
 function camFail(e){
-  showStatus(false);
-  stopStreams(); stopLib();
+  showStatus(false); stopStreams(); stopLib();
   if(document.querySelector(".cam-fallback")) return;
   const name = (e && (e.name||e.message)) || "";
   let titulo = "Não consegui abrir a câmera", extra = "";
@@ -616,7 +747,7 @@ function camFail(e){
     extra="Este dispositivo não informou uma câmera disponível (comum em PCs e pré-visualizações)."; }
   else if(name==="NotReadableError"){ titulo="Câmera em uso";
     extra="Feche outros apps que estejam usando a câmera e tente novamente."; }
-  else if(name==="SecurityError"||name==="sem-suporte"||location.protocol!=="https:"&&location.hostname!=="localhost"){
+  else if(name==="SecurityError"||name==="sem-suporte"||(location.protocol!=="https:"&&location.hostname!=="localhost")){
     extra="A câmera só funciona em HTTPS (ex.: GitHub Pages) ou localhost — não por arquivo aberto direto."; }
   const el = document.createElement("div");
   el.className = "cam-fallback";
@@ -634,7 +765,7 @@ function retryCam(){
   else startLibCam({facingMode:"environment"});
 }
 async function closeCam(){
-  camMode = null;                            // limpa o contexto da leitura
+  camMode = null;
   stopStreams(); await stopLib();
   showStatus(false);
   camEl().classList.add("hidden");
@@ -643,11 +774,7 @@ async function closeCam(){
   focusCollector();
 }
 
-/* ============ ROTEAMENTO DOS CÓDIGOS ============
-   O contexto define o tipo da leitura (não o formato do código):
-   • câmera/tela de LER ROMANEIO → o código lido É o romaneio (qualquer código de barras)
-   • tela de BOBINAS             → bobina vinculada ao romaneio
-   • tela da OP                  → bobinas sem romaneio vinculadas à OP informada */
+/* ============ ROTEAMENTO DOS CÓDIGOS (por contexto) ============ */
 function onCode(raw){
   const code = (raw||"").trim().toUpperCase();
   if(!code) return;
@@ -659,51 +786,11 @@ function onCode(raw){
   if(camAberta){
     if(camMode==="rom"){ onRomaneio(code); return; }
     if(camMode==="op"){ onOP(code); return; }
-    onBobina(code); return;                  // camMode "bob"
+    onBobina(code); return;
   }
   if(document.getElementById("scr-op").classList.contains("active")){ onOP(code); return; }
   if(document.getElementById("scr-bob").classList.contains("active")){ onBobina(code); return; }
-  onRomaneio(code);                          // tela inicial = bip do romaneio
-}
-
-function onRomaneio(code){
-  // qualquer código de barras lido aqui é o romaneio; os dados viriam do ERP (aqui, mock)
-  const desdeCameraRom = camMode==="rom";
-  if(rom && rom.cod===code){ feedback("warn","Romaneio já vinculado", code); return; }
-  if((rom || op) && bobinas.length){
-    feedback("warn","Já existe um vínculo", "Finalize antes de trocar"); return;
-  }
-  const d = ROMANEIOS[code] || { cliente:"— (virá do ERP)", destino:"—", transp:"—", motorista:"—" };
-  rom = { cod: code, ...d };
-  if(!inicio) inicio = new Date();
-  renderVincCard();
-  feedback("ok","Romaneio aberto", code);
-  closeCam();
-  go("scr-bob");
-  if(desdeCameraRom){ setTimeout(()=>openCam("bob"), 500); }
-  updateFin();
-}
-
-function onBobina(code){
-  if(!rom && !op){
-    feedback("warn","Leia o romaneio primeiro","ou informe uma OP");
-    return;
-  }
-  if(!inicio) inicio = new Date();
-  const hora = new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
-  if(bobinas.some(b=>b.cod===code)){
-    dups++;
-    feedback("warn","Duplicada!", code+" já foi lida");
-    feedLog.unshift({cod:code,hora,dup:true});
-  } else {
-    seq++;
-    bobinas.push({cod:code,hora});
-    feedback("ok","✓ Bobina conferida", code);
-    feedLog.unshift({seq,cod:code,hora,dup:false});
-    bump();
-  }
-  feedLog = feedLog.slice(0,30);
-  render();
+  onRomaneio(code);
 }
 
 /* ============ COLETOR DE DADOS ============ */
@@ -724,36 +811,40 @@ function focusCollector(){
 
 /* ============ DEMO ============ */
 function simulacao(){
-  if(camMode==="rom"){ onCode("ROM-2026-058412"); return; }
-  if(camMode==="op"){ onCode("OP-445566"); return; }
-  let code;
-  if(bobinas.length && Math.random()<0.15){
-    code = bobinas[Math.floor(Math.random()*bobinas.length)].cod;
-  } else {
-    code = "7898" + String(Math.floor(Math.random()*90000000)+10000000);
+  if(camMode==="rom"){
+    const g = gA();
+    const code = (g && g.cod==="ROM-2026-058412") ? "ROM-2026-058413" : "ROM-2026-058412";
+    onCode(code); return;
   }
+  if(camMode==="op"){ onCode("OP-445566"); return; }
+  const todas = grupos.flatMap(g=>g.bobinas.map(b=>b.cod));
+  let code;
+  if(todas.length && Math.random()<0.15) code = todas[Math.floor(Math.random()*todas.length)];
+  else code = "7898" + String(Math.floor(Math.random()*90000000)+10000000);
   onCode(code);
 }
 
 /* ============ RENDER ============ */
 function renderVincCard(){
   const card = document.getElementById("vinc-card");
-  if(rom){
+  const g = gA();
+  const extras = grupos.length>1 ? ` · +${grupos.length-1} vínculo(s)` : "";
+  if(g && g.tipo==="ROM"){
     card.innerHTML = `
       <div class="ico">🧾</div>
       <div class="grow">
-        <div class="t">${rom.cod}</div>
-        <div class="d">${rom.cliente} · ${rom.destino}</div>
+        <div class="t">${g.cod}</div>
+        <div class="d">${g.dados.cliente} · ${g.dados.destino}${extras}</div>
       </div>
       <button class="mini-btn" onclick="go('scr-main')">Trocar</button>`;
-  } else if(op){
+  } else if(g){
     card.innerHTML = `
       <div class="ico">⚙️</div>
       <div class="grow">
-        <div class="t">OP ${op}</div>
-        <div class="d">Sem romaneio · bobinas vinculadas à OP</div>
+        <div class="t">OP ${g.cod}</div>
+        <div class="d">Sem romaneio · bobinas vinculadas à OP${extras}</div>
       </div>
-      <button class="mini-btn" onclick="go('scr-op')">Trocar</button>`;
+      <button class="mini-btn" onclick="go('scr-main')">Trocar</button>`;
   } else {
     card.innerHTML = `
       <div class="ico off">🧾</div>
@@ -769,68 +860,194 @@ function bump(){
     const e=document.getElementById(id); e.classList.remove("bump"); void e.offsetWidth; e.classList.add("bump");
   });
 }
-function refreshCamCnt(){ document.getElementById("cam-cnt").textContent = bobinas.length; }
+function refreshCamCnt(){ document.getElementById("cam-cnt").textContent = totalBob(); }
 function render(){
-  document.getElementById("ct-num").textContent = bobinas.length;
+  document.getElementById("ct-num").textContent = totalBob();
   document.getElementById("ct-dup").textContent = dups;
+  const g = gA();
+  document.getElementById("ct-vinc").textContent = g
+    ? "neste vínculo: " + (g.bobinas.length+(g.qManual||0)) + (g.qManual? " ("+g.qManual+" informadas)" : "")
+    : "—";
   refreshCamCnt();
   const list = document.getElementById("scanlist");
-  list.innerHTML = feedLog.length ? feedLog.map(f=>`
-    <div class="scan-row">
-      <div class="n ${f.dup?"warn":""}">${f.dup?"!":String(f.seq).padStart(2,"0")}</div>
-      <div class="c">${f.cod}</div>
-      <div class="tag ${f.dup?"warn":"ok"}">${f.dup?"duplicada":"lida"}</div>
-      <div class="h">${f.hora}</div>
-    </div>`).join("") : '<div class="empty">Nenhuma bobina lida ainda.</div>';
+  list.innerHTML = feedLog.length ? feedLog.map(f=>{
+    if(f.manual) return `
+      <div class="scan-row">
+        <div class="n man">✎</div>
+        <div class="c">Qtd. informada: +${f.qtd} → ${f.dest}</div>
+        <div class="tag man">manual</div>
+        <div class="h">${f.hora}</div>
+      </div>`;
+    return `
+      <div class="scan-row">
+        <div class="n ${f.dup?"warn":""}">${f.dup?"!":String(f.seq).padStart(2,"0")}</div>
+        <div class="c">${f.cod}</div>
+        <div class="tag ${f.dup?"warn":"ok"}">${f.dup?"duplicada":"lida"}</div>
+        <div class="h">${f.hora}</div>
+      </div>`;
+  }).join("") : '<div class="empty">Nenhuma leitura ainda.</div>';
+  renderVincCard();
   updateFin();
 }
-function updateFin(){
-  document.getElementById("btn-fin").disabled = bobinas.length===0;
+function updateFin(){ document.getElementById("btn-fin").disabled = totalBob()===0; }
+
+/* ============ TELA DE FINALIZAR ============ */
+function durMin(rec){
+  return Math.max(1, Math.round((new Date(rec.fim)-new Date(rec.inicio))/60000));
+}
+function goFin(){
+  if(!totalBob()){ feedback("warn","Nada para finalizar",""); return; }
+  closeCam();
+  const agora = new Date();
+  const rec = { inicio:(inicio||agora).toISOString(), fim: agora.toISOString() };
+  const nRom = grupos.filter(g=>g.tipo==="ROM").length;
+  const nOP  = grupos.filter(g=>g.tipo==="OP").length;
+  document.getElementById("fin-body").innerHTML = `
+    <div class="report">
+      <h2>Finalizar conferência</h2>
+      <p style="font-size:12.5px;color:var(--muted)">Confira o resumo antes de gerar o relatório</p>
+      <div class="total"><b>${totalBob()}</b><span>bobinas / pacotes</span></div>
+      <div class="rmeta">
+        <div><b>Operador:</b> ${operador || "não informado"}</div>
+        <div><b>Duração:</b> ${durMin(rec)} min</div>
+        <div><b>Vínculos lidos:</b> ${grupos.length} (${nRom} romaneio${nRom!==1?"s":""} · ${nOP} OP${nOP!==1?"s":""})</div>
+        <div><b>Bobinas / pacotes:</b> ${totalBob()} (bipados ${totalLidas()} · informados ${totalMan()})</div>
+        ${dups?`<div><b>Leituras duplicadas ignoradas:</b> ${dups}</div>`:""}
+      </div>
+    </div>
+    <div class="section-title">Vínculos e leituras</div>
+    ${grupos.map(g=>`
+      <div class="hist-card">
+        <div class="hist-head">
+          <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
+          <div class="grow">
+            <div class="t">${g.cod}</div>
+            <div class="d">${g.tipo==="ROM" ? (g.dados.cliente+" · "+g.dados.destino) : "Sem romaneio"}</div>
+          </div>
+          <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
+        </div>
+        <div class="hist-body">
+          ${g.bobinas.map((b,j)=>`
+            <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
+            <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span></div>`).join("")}
+          ${(g.qManual||0) ? `<div class="brow man"><span class="bn">✎</span>
+            <span class="bc">Informado manualmente (sem bip)</span><span class="bh">+${g.qManual}</span></div>` : ""}
+          ${!g.bobinas.length && !(g.qManual||0) ? '<div class="empty">Sem leituras neste vínculo.</div>' : ""}
+        </div>
+      </div>`).join("")}
+    <div class="bigbtns no-print">
+      <button class="bigbtn b-op" style="min-height:68px;font-size:17px" onclick="confirmFin()">✓ CONFIRMAR E GERAR RELATÓRIO</button>
+      <button class="bigbtn b-rom" style="min-height:56px;font-size:15px" onclick="go('scr-bob')">Voltar às leituras</button>
+    </div>`;
+  go("scr-fin");
 }
 
-/* ============ FINALIZAR ============ */
-function vincTxt(){ return rom ? rom.cod : op ? "OP "+op : "—"; }
-function askFinish(){
-  document.getElementById("m-body").innerHTML = `
-    <div class="row"><span>Vínculo</span><b>${vincTxt()}</b></div>
-    <div class="row"><span>Bobinas conferidas</span><b style="color:var(--ok)">${bobinas.length}</b></div>
-    <div class="row"><span>Leituras duplicadas</span><b style="color:${dups?"var(--warn)":"inherit"}">${dups}</b></div>`;
-  modal(true);
-}
-function modal(on){ document.getElementById("modal").classList.toggle("hidden",!on); }
-function doFinish(){
-  modal(false); closeCam();
+/* ============ CONFIRMAR → salva no histórico + relatório ============ */
+function confirmFin(){
   const fim = new Date();
-  const dur = Math.max(1, Math.round((fim-(inicio||fim))/60000));
+  const rec = {
+    id: fim.getTime(),
+    operador: operador || "não informado",
+    modo, dups,
+    inicio: (inicio||fim).toISOString(), fim: fim.toISOString(),
+    grupos: grupos.map(g=>({
+      tipo:g.tipo, cod:g.cod, dados:g.dados,
+      bobinas:g.bobinas.map(b=>({cod:b.cod,hora:b.hora})),
+      qManual:g.qManual||0
+    }))
+  };
+  hist.unshift(rec); saveHistLS();
+  renderReport(rec);
+  go("scr-rep");
+}
+
+/* ============ RELATÓRIO (final e reaberto do histórico) ============ */
+function renderReport(rec){
+  const fim = new Date(rec.fim);
+  const nRom = rec.grupos.filter(g=>g.tipo==="ROM");
+  const nOP  = rec.grupos.filter(g=>g.tipo==="OP");
+  const totBob = rec.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
+  const totLid = rec.grupos.reduce((a,g)=>a+g.bobinas.length,0);
   document.getElementById("report").innerHTML = `
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <div><h2>Relatório de Conferência</h2><p style="font-size:12px;color:var(--muted)">Gerado em ${fim.toLocaleString("pt-BR")}</p></div>
       <span style="background:var(--okbg);color:var(--ok);font-size:13px;font-weight:800;border-radius:999px;padding:6px 12px">✓ CONCLUÍDO</span>
     </div>
-    <div class="total"><b>${bobinas.length}</b><span>bobinas conferidas</span></div>
+    <div class="total"><b>${totBob}</b><span>bobinas / pacotes conferidos</span></div>
     <div class="rmeta">
-      ${rom ? `<div><b>Romaneio:</b> ${rom.cod}</div>
-               <div><b>Cliente:</b> ${rom.cliente}</div>
-               <div><b>Destino:</b> ${rom.destino}</div>
-               <div><b>Transportadora:</b> ${rom.transp}</div>
-               <div><b>Motorista:</b> ${rom.motorista}</div>`
-            : `<div><b>OP:</b> ${op}</div>
-               <div><b>Romaneio:</b> — (não vinculado)</div>`}
-      <div><b>Operador:</b> ${operador || "não informado"}</div>
-      <div><b>Leitura via:</b> ${modo==="camera"?"Câmera":"Coletor de dados"}</div>
-      <div><b>Duração:</b> ${dur} min</div>
-      ${dups?`<div><b>Leituras duplicadas ignoradas:</b> ${dups}</div>`:""}
+      <div><b>Operador:</b> ${rec.operador}</div>
+      <div><b>Duração:</b> ${durMin(rec)} min</div>
+      <div><b>Romaneio:</b> ${nRom.length ? nRom.map(g=>g.cod).join(", ") : "-"}</div>
+      <div><b>OP:</b> ${nOP.length ? nOP.map(g=>g.cod).join(", ") : "-"}</div>
+      <div><b>Romaneios lidos:</b> ${nRom.length} · <b>OPs:</b> ${nOP.length}</div>
+      <div><b>Bobinas / pacotes:</b> ${totBob} (bipados ${totLid} · informados ${totBob-totLid})</div>
+      <div><b>Leitura via:</b> ${rec.modo==="camera"?"Câmera":"Coletor de dados"}</div>
+      ${rec.dups?`<div><b>Leituras duplicadas ignoradas:</b> ${rec.dups}</div>`:""}
     </div>
-    <div class="section-title" style="margin-left:0">Bobinas (${bobinas.length})</div>
-    <table class="rtable"><tbody>
-      ${bobinas.map((b,i)=>`<tr><td>${String(i+1).padStart(2,"0")} · ${b.cod}</td><td>${b.hora}</td></tr>`).join("")}
-    </tbody></table>
-    <div class="signs"><div class="sign">Conferente${operador?": "+operador:""}</div><div class="sign">Motorista / Responsável</div></div>`;
-  go("scr-rep");
+    ${rec.grupos.map(g=>`
+      <div class="section-title" style="margin:14px 0 6px">${g.tipo==="ROM"?"🧾 Romaneio":"⚙️ OP"}: ${g.cod}${g.dados&&g.dados.cliente&&g.dados.cliente!=="— (virá do ERP)" ? " · "+g.dados.cliente : ""} · ${g.bobinas.length+(g.qManual||0)} un</div>
+      ${g.dados&&g.tipo==="ROM"?`<div style="font-size:12px;color:var(--muted);margin:-2px 0 4px">${g.dados.destino} · ${g.dados.transp} · ${g.dados.motorista}</div>`:""}
+      <table class="rtable"><tbody>
+        ${g.bobinas.map((b,i)=>`<tr><td>${String(i+1).padStart(2,"0")} · ${b.cod}</td><td>${b.hora}</td></tr>`).join("")}
+        ${(g.qManual||0)?`<tr><td>✎ Informado manualmente (sem bip)</td><td>+${g.qManual} un</td></tr>`:""}
+      </tbody></table>`).join("")}
+    <div class="signs"><div class="sign">Conferente${rec.operador&&rec.operador!=="não informado"?": "+rec.operador:""}</div><div class="sign">Motorista / Responsável</div></div>`;
 }
+
+/* ============ HISTÓRICO ============ */
+function goHist(){ renderHist(); go("scr-hist"); }
+function renderHist(){
+  const box = document.getElementById("hist-list");
+  if(!hist.length){
+    box.innerHTML = `<div style="background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:22px;text-align:center;color:var(--muted);font-size:13.5px">Nenhuma conferência finalizada ainda.</div>`;
+    return;
+  }
+  box.innerHTML = hist.map((h,i)=>{
+    const tot = h.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
+    const first = h.grupos[0];
+    const titulo = h.grupos.length>1 ? first.cod + " +" + (h.grupos.length-1) : first.cod;
+    const fimTxt = new Date(h.fim).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+    return `
+    <div class="hist-card">
+      <button class="hist-head" onclick="histToggle(${i})">
+        <div class="hico ${first.tipo==="ROM"?"":"op"}">${first.tipo==="ROM"?"🧾":"⚙️"}</div>
+        <div class="grow">
+          <div class="t">${titulo}</div>
+          <div class="d">${h.grupos.length} vínculo(s) · ${fimTxt} · ${h.operador}</div>
+        </div>
+        <span class="hbadge">${tot}</span>
+        <span class="chev" id="chev-${i}">▾</span>
+      </button>
+      <div class="hist-body hidden" id="hbody-${i}">
+        ${h.grupos.map(g=>`
+          <div class="gline"><span class="gico">${g.tipo==="ROM"?"🧾":"⚙️"}</span> ${g.cod}
+            <span class="gcnt">${g.bobinas.length+(g.qManual||0)} un</span></div>
+          ${g.bobinas.map((b,j)=>`
+            <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
+            <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span></div>`).join("")}
+          ${(g.qManual||0)?`<div class="brow man"><span class="bn">✎</span>
+            <span class="bc">Informado manualmente</span><span class="bh">+${g.qManual}</span></div>`:""}
+        `).join("")}
+        ${h.dups?`<div class="dups-line">⚠ ${h.dups} leitura(s) duplicada(s) ignorada(s)</div>`:""}
+        <div class="hist-actions">
+          <button class="ha-rep" onclick="histReport(${i})">📄 Ver relatório</button>
+          <button class="ha-del" onclick="histDel(${i})">🗑 Excluir</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+function histToggle(i){
+  document.getElementById("hbody-"+i).classList.toggle("hidden");
+  document.getElementById("chev-"+i).classList.toggle("open");
+}
+function histDel(i){ hist.splice(i,1); saveHistLS(); renderHist(); feedback("warn","Conferência excluída",""); }
+function histReport(i){ renderReport(hist[i]); go("scr-rep"); }
+
+/* ============ NOVA CONFERÊNCIA ============ */
 function novaConf(){
-  rom=null; op=null; bobinas=[]; dups=0; seq=0; feedLog=[]; inicio=null; lastCode=""; camMode=null;
-  renderVincCard(); render();
+  grupos=[]; gAtual=-1; dups=0; seq=0; feedLog=[]; inicio=null; lastCode=""; camMode=null;
+  render();
   go("scr-main");
 }
 
@@ -864,7 +1081,8 @@ function feedback(tipo,msg,code){
 /* boot */
 if(window.matchMedia("(min-width:900px)").matches){ setModo("coletor"); }
 else { setModo("camera"); }
-renderUser(); renderVincCard(); render(); go("scr-main");
+loadHist(); seedHist();
+renderUser(); render(); go("scr-main");
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a22c18f06f002535',t:'MTc4NTMyNzgzMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
