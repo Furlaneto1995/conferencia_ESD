@@ -254,6 +254,11 @@ section.screen.active{display:block}
 .hist-actions button{flex:1;min-height:48px;border-radius:12px;font-size:13.5px;font-weight:800}
 .ha-rep{background:var(--brand);color:#fff}
 .ha-del{background:var(--errbg);color:var(--err)}
+/* botões de apagar */
+.b-del{background:linear-gradient(135deg,#e04a3f,#c22f25)}
+.del-b{width:34px;height:34px;flex:none;border-radius:9px;background:var(--errbg);color:var(--err);font-size:15px;display:flex;align-items:center;justify-content:center}
+.del-b:active{transform:scale(.92)}
+.brow .del-b{width:28px;height:28px;font-size:13px;border-radius:7px}
 
 /* ============ RELATÓRIO / FINALIZAR ============ */
 .report{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:20px 16px;overflow-wrap:break-word}
@@ -450,6 +455,21 @@ section.screen.active{display:block}
         <button class="bigbtn b-whats" style="min-height:64px;font-size:16px" onclick="shareWhats()">🟢 COMPARTILHAR NO WHATSAPP</button>
         <button class="bigbtn b-bob" style="min-height:64px;font-size:16px" onclick="downloadCSV()">⬇️ BAIXAR NO DISPOSITIVO</button>
         <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closeExp()">Voltar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONFIRMAR EXCLUSÃO ============ -->
+<div id="del-ov" class="user-ov hidden" style="padding:14px">
+  <div class="entry">
+    <div class="card-e" style="margin-top:10px">
+      <div class="eico">🗑️</div>
+      <h2 id="del-title">Apagar?</h2>
+      <p id="del-msg" style="font-size:14px;font-weight:700;color:var(--muted);margin:10px 0 2px;word-break:break-word"></p>
+      <div class="bigbtns">
+        <button class="bigbtn b-del" style="min-height:64px;font-size:17px" onclick="confYes()">🗑️ APAGAR</button>
+        <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closeConf()">Cancelar</button>
       </div>
     </div>
   </div>
@@ -677,6 +697,55 @@ function saveQtd(){
 }
 document.getElementById("inp-qtd").addEventListener("keydown",e=>{ if(e.key==="Enter") saveQtd(); });
 
+/* ============ APAGAR BOBINAS / VÍNCULO INTEIRO ============ */
+let confCb = null;
+function askConfirm(titulo, msg, cb){
+  document.getElementById("del-title").textContent = titulo;
+  document.getElementById("del-msg").textContent = msg;
+  confCb = cb;
+  document.getElementById("del-ov").classList.remove("hidden");
+}
+function closeConf(){ confCb = null; document.getElementById("del-ov").classList.add("hidden"); focusCollector(); }
+function confYes(){ const cb = confCb; closeConf(); if(cb) cb(); }
+function refreshScreens(){
+  if(document.getElementById("scr-main").classList.contains("active")) renderMainVincs();
+  if(document.getElementById("scr-fin").classList.contains("active")){
+    if(!totalBob()) go("scr-main");   // apagou tudo → volta ao início
+    else renderFin();
+  }
+}
+function delBobina(gi, bi){
+  const g = grupos[gi]; if(!g || !g.bobinas[bi]) return;
+  const cod = g.bobinas[bi].cod;
+  askConfirm("Apagar bobina?", cod, ()=>{
+    g.bobinas.splice(bi,1);
+    feedback("warn","🗑️ Bobina apagada", cod);
+    render(); refreshScreens();
+  });
+}
+function delManual(gi){
+  const g = grupos[gi]; if(!g || !(g.qManual>0)) return;
+  askConfirm("Apagar quantidade informada?", "+"+g.qManual+" un em "+g.cod, ()=>{
+    g.qManual = 0;
+    render(); refreshScreens();
+  });
+}
+function delVinculo(gi){
+  const g = grupos[gi]; if(!g) return;
+  const n = g.bobinas.length + (g.qManual||0);
+  askConfirm("Apagar "+(g.tipo==="ROM"?"romaneio":"OP")+" inteiro?",
+             g.cod + " · " + n + " bobina" + (n===1?"":"s"), ()=>{
+    grupos.splice(gi,1);
+    if(gAtual===gi) gAtual = -1;
+    else if(gAtual>gi) gAtual--;
+    if(mainExpandido===gi) mainExpandido = -1;
+    else if(mainExpandido>gi) mainExpandido--;
+    finExpandido = -1;
+    feedback("warn","🗑️ Vínculo apagado", g.cod);
+    render(); renderMainVincs(); refreshScreens();
+  });
+}
+
 /* ============ CÂMERA ============ */
 function camEl(){ return document.getElementById("cam"); }
 function timeoutP(ms){ return new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), ms)); }
@@ -856,6 +925,7 @@ function focusCollector(){
   if(!document.getElementById("user-ov").classList.contains("hidden")) return;
   if(!document.getElementById("qtd-ov").classList.contains("hidden")) return;
   if(!document.getElementById("exp-ov").classList.contains("hidden")) return;
+  if(!document.getElementById("del-ov").classList.contains("hidden")) return;
   if(document.getElementById("scr-op").classList.contains("active")) return;
   if(document.getElementById("scr-fin").classList.contains("active")) return;
   /* se já existe outro input com foco, não interrompe a digitação */
@@ -915,12 +985,15 @@ function renderMainVincs(){
         <div class="hist-body ${mainExpandido===i?"":"hidden"}" id="mv-body-${i}">
           ${g.bobinas.map((b,j)=>`
             <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
-            <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span></div>`).join("")}
+            <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span>
+            <button class="del-b" onclick="delBobina(${i},${j})" title="Apagar">🗑️</button></div>`).join("")}
           ${(g.qManual||0) ? `<div class="brow man"><span class="bn">✎</span>
-            <span class="bc">Informado manualmente (sem bip)</span><span class="bh">+${g.qManual}</span></div>` : ""}
+            <span class="bc">Informado manualmente (sem bip)</span><span class="bh">+${g.qManual}</span>
+            <button class="del-b" onclick="delManual(${i})" title="Apagar">🗑️</button></div>` : ""}
           ${!g.bobinas.length && !(g.qManual||0) ? '<div class="empty">Sem leituras neste vínculo ainda.</div>' : ""}
           <div class="hist-actions">
             <button class="ha-rep" onclick="selecionarVinc(${i})">📦 Ler bobinas aqui</button>
+            <button class="ha-del" onclick="delVinculo(${i})">🗑️ Apagar ${g.tipo==="ROM"?"romaneio":"OP"}</button>
           </div>
         </div>
       </div>`).join("")}`;
@@ -953,6 +1026,7 @@ function render(){
         <div class="n">${String(g.bobinas.length-j).padStart(2,"0")}</div>
         <div class="c">${b.cod}</div>
         <div class="h">${b.hora}</div>
+        <button class="del-b no-print" onclick="delBobina(${gAtual},${g.bobinas.length-1-j})" title="Apagar">🗑️</button>
       </div>`).join("") : '<div class="empty">Nenhuma leitura ainda.</div>';
   renderVincCard();
   updateFin();
@@ -976,6 +1050,8 @@ function goFin(){
   go("scr-fin");
 }
 function renderFin(){
+  const nomeInput = document.getElementById("inp-nome-conf");
+  const nomeAtual = nomeInput ? nomeInput.value : "";
   const agora = new Date();
   const rec = { inicio:(inicio||agora).toISOString(), fim: agora.toISOString() };
   const nRom = grupos.filter(g=>g.tipo==="ROM").length;
@@ -992,7 +1068,7 @@ function renderFin(){
       </div>
     </div>
     <div class="entry" style="max-width:none;margin-top:4px">
-      <input id="inp-nome-conf" autocomplete="off" placeholder="Nome da conferência (ex.: Romaneio do caminhão 123)" style="text-transform:none;letter-spacing:.5px;margin-top:0">
+      <input id="inp-nome-conf" autocomplete="off" placeholder="Nome da conferência (ex.: Romaneio do caminhão 123)" value="${nomeAtual.replace(/&/g,"&amp;").replace(/"/g,"&quot;")}" style="text-transform:none;letter-spacing:.5px;margin-top:0">
     </div>
     <div class="section-title">Vínculos e leituras</div>
     ${grupos.map((g,i)=>`
@@ -1009,10 +1085,15 @@ function renderFin(){
         <div class="hist-body ${finExpandido===i?"":"hidden"}">
           ${g.bobinas.map((b,j)=>`
             <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
-            <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span></div>`).join("")}
+            <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span>
+            <button class="del-b no-print" onclick="delBobina(${i},${j})" title="Apagar">🗑️</button></div>`).join("")}
           ${(g.qManual||0) ? `<div class="brow man"><span class="bn">✎</span>
-            <span class="bc">Informado manualmente (sem bip)</span><span class="bh">+${g.qManual}</span></div>` : ""}
+            <span class="bc">Informado manualmente (sem bip)</span><span class="bh">+${g.qManual}</span>
+            <button class="del-b no-print" onclick="delManual(${i})" title="Apagar">🗑️</button></div>` : ""}
           ${!g.bobinas.length && !(g.qManual||0) ? '<div class="empty">Sem leituras neste vínculo.</div>' : ""}
+          <div class="hist-actions no-print">
+            <button class="ha-del" onclick="delVinculo(${i})">🗑️ Apagar ${g.tipo==="ROM"?"romaneio":"OP"} inteiro</button>
+          </div>
         </div>
       </div>`).join("")}
     <div class="bigbtns no-print">
@@ -1023,6 +1104,7 @@ function renderFin(){
 
 /* ============ CONFIRMAR → salva no histórico + relatório ============ */
 function confirmFin(){
+  if(!totalBob()){ feedback("warn","Nada para finalizar",""); go("scr-main"); return; }
   const fim = new Date();
   const first = grupos[0];
   const nomePadrao = first ? first.cod + (grupos.length>1 ? " +"+(grupos.length-1) : "") : "Conferência";
@@ -1242,5 +1324,5 @@ if(!modo){
 loadHist();
 renderUser(); render(); go("scr-main");
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a22d5dfa2ccf346c',t:'MTc4NTM0MTE0Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
