@@ -506,15 +506,20 @@ section.screen.active{display:block}
         <button class="bigbtn" id="btn-confronto" style="min-height:64px;font-size:15px" onclick="toggleConfronto()">
           <span class="bico" id="ic-confronto">🛡️</span><span id="tx-confronto">CONFRONTO: ATIVO</span>
         </button>
-        <button class="bigbtn b-inst" style="min-height:64px;font-size:16px" onclick="esdSync(true)">
-          <span class="bico">🔄</span><span>ATUALIZAR BASE</span>
+        <button class="bigbtn b-inst" style="min-height:64px;font-size:16px" onclick="togglePlanMenu()">
+          <span class="bico">📊</span><span>PLANILHA ESD</span><span id="plan-chev" class="chev" style="margin-left:auto">▾</span>
         </button>
-        <button class="bigbtn b-bob" style="min-height:64px;font-size:16px" onclick="importFromCfg()">
-          <span class="bico">📥</span><span>IMPORTAR PLANILHA</span>
-        </button>
-        <button class="bigbtn b-del" style="min-height:64px;font-size:16px" onclick="delBaseEsd()">
-          <span class="bico">🗑️</span><span>EXCLUIR BASE ESD</span>
-        </button>
+        <div id="plan-sub" class="hidden" style="display:grid;gap:10px;margin:2px 0 4px">
+          <button class="bigbtn b-inst" style="min-height:56px;font-size:15px" onclick="esdSync(true)">
+            <span class="bico">🔄</span><span>ATUALIZAR BASE</span>
+          </button>
+          <button class="bigbtn b-bob" style="min-height:56px;font-size:15px" onclick="importFromCfg()">
+            <span class="bico">📥</span><span>IMPORTAR PLANILHA</span>
+          </button>
+          <button class="bigbtn b-del" style="min-height:56px;font-size:15px" onclick="delBaseEsd()">
+            <span class="bico">🗑️</span><span>EXCLUIR BASE ESD</span>
+          </button>
+        </div>
       </div>
       <div class="cfg-foot no-print">
         <button class="bigbtn b-rom" style="min-height:56px;font-size:15px;width:100%" onclick="closeCfg()">Voltar</button>
@@ -662,6 +667,12 @@ function openCfg(){
   document.getElementById("cfg-ov").classList.remove("hidden");
 }
 function closeCfg(){ document.getElementById("cfg-ov").classList.add("hidden"); focusCollector(); }
+function togglePlanMenu(){
+  const sub=document.getElementById("plan-sub"), ch=document.getElementById("plan-chev");
+  const open=sub.classList.toggle("hidden");
+  if(ch){ ch.classList.toggle("open", !open); }
+  focusCollector();
+}
 function importFromCfg(){
   closeCfg();
   setTimeout(()=>document.getElementById("file-csv").click(), 150);
@@ -1334,16 +1345,11 @@ function renderVolCard(){
   const plan = ex ? ex.volumes : null;
   const conf = !!(ex && ex.confirmado);
   const manual = !!(ex && !ex.validado);
-  let msg = "", cls = "ok";
-  if(conf){ cls = "conf"; msg = "✓ Quantidade confirmada pelo operador"; }
-  else if(plan != null && fis === plan && fis > 0){ cls = "ok"; msg = "✓ quantidade bate — toque no ✓ para confirmar"; }
-  else if(plan != null && fis < plan){ cls = "falta"; msg = "faltam " + (plan - fis) + " para a planilha"; }
-  else if(plan != null){ cls = "falta"; msg = "sobram " + (fis - plan) + " em relação à planilha"; }
   box.innerHTML = `
     <div class="volcard ${manual ? "manual" : ""}">
       ${plan != null ? `
       <div class="volplan">
-        <div class="lbl">${manual ? "Volumes informados" : "Volumes na planilha"}</div>
+        <div class="lbl">Qtd. volumes</div>
         <div class="n">${plan}</div>
       </div>
       ${manual ? `<div class="tagman">fora da planilha${ex.op?" · "+ex.op:""} · pallet ${ex.pallet||"—"}</div>` : ""}
@@ -1357,7 +1363,6 @@ function renderVolCard(){
         <button class="stepbtn sb-mais" onclick="stepFis(1)">+</button>
         <button class="confbtn ${plan!=null ? "show" : ""} ${conf ? "ok" : ""}" onclick="confirmarQtdVinc()" title="Confirmar quantidade">✓</button>
       </div>
-      ${msg ? `<div class="msgfis ${cls}">${msg}</div>` : ""}
     </div>`;
 }
 function stepFis(d){
@@ -1393,7 +1398,7 @@ function renderMainVincs(){
   const box = document.getElementById("main-vincs");
   if(!grupos.length){ box.innerHTML = ""; return; }
   box.innerHTML = `
-    <div class="section-title">Nesta conferência (${grupos.length} vínculo${grupos.length>1?"s":""} · ${totalBob()} bobina${totalBob()>1?"s":""})</div>
+    <div class="section-title">Leituras (${grupos.length} OP${grupos.length>1?"s":""} · ${totalBob()} volume${totalBob()>1?"s":""})</div>
     ${grupos.map((g,i)=>`
       <div class="hist-card">
         <div class="hist-head" style="display:flex;align-items:center;gap:11px;padding:13px 14px">
@@ -1463,8 +1468,6 @@ function goFin(){
   go("scr-fin");
 }
 function renderFin(){
-  const nomeInput = document.getElementById("inp-nome-conf");
-  const nomeAtual = nomeInput ? nomeInput.value : "";
   const agora = new Date();
   const rec = { inicio:(inicio||agora).toISOString(), fim: agora.toISOString() };
   const nRom = grupos.filter(g=>g.tipo==="ROM").length;
@@ -1479,9 +1482,6 @@ function renderFin(){
         <div><b>Quantidade de romaneios / OP's:</b> ${nRom} / ${nOP}</div>
         <div><b>Bobinas / pacotes:</b> ${totalBob()} (lidos ${totalLidas()} + informados ${totalMan()})</div>
       </div>
-    </div>
-    <div class="entry" style="max-width:none;margin-top:4px">
-      <input id="inp-nome-conf" autocomplete="off" placeholder="Nome da conferência (ex.: Romaneio do caminhão 123)" value="${nomeAtual.replace(/&/g,"&amp;").replace(/"/g,"&quot;")}" style="text-transform:none;letter-spacing:.5px;margin-top:0">
     </div>
     <div class="section-title">Vínculos e leituras</div>
     ${grupos.map((g,i)=>`
@@ -1521,7 +1521,7 @@ function confirmFin(){
   const fim = new Date();
   const first = grupos[0];
   const nomePadrao = first ? first.cod + (grupos.length>1 ? " +"+(grupos.length-1) : "") : "Conferência";
-  const nome = (document.getElementById("inp-nome-conf").value.trim() || nomePadrao);
+  const nome = nomePadrao;
   const rec = {
     id: fim.getTime(),
     nome,
@@ -1908,5 +1908,5 @@ loadConfronto();
 try{ history.replaceState({scr:"scr-main"}, ""); }catch(e){}   // base do botão voltar
 renderUser(); render(); go("scr-main");
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2719ad1ec054f8c',t:'MTc4NjA1NjY3MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
