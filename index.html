@@ -74,8 +74,6 @@ section.screen.active{display:block}
 .status .grow{flex:1;min-width:0}
 .status .t{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .status .d{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.esd-refresh{flex:none;width:42px;height:42px;border-radius:12px;background:#eef2f7;font-size:18px;display:flex;align-items:center;justify-content:center}
-.esd-refresh:active{transform:scale(.92)}
 .mini-btn{flex:none;background:#eef2f7;color:var(--brand2);font-size:12.5px;font-weight:800;border-radius:10px;padding:10px 12px}
 .vbig{font-size:25px;font-weight:800;letter-spacing:.4px;line-height:1.15;word-break:break-all}
 
@@ -122,7 +120,6 @@ section.screen.active{display:block}
 .fisnum:active{background:#eef2f7}
 .fisnum .v{font-size:46px;font-weight:800;line-height:1.05;color:var(--ink)}
 .fisnum .v.bateu{color:var(--ok)}
-.fisnum .toq{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.4px}
 .confbtn{
   flex:none;width:64px;height:64px;border-radius:16px;font-size:26px;color:#0b7a48;background:#fff;
   border:2.5px solid #7cc7a3;display:none;align-items:center;justify-content:center;
@@ -356,7 +353,7 @@ section.screen.active{display:block}
     <button id="m-camera" onclick="setModo('camera')">📷 Câmera</button>
   </div>
   <div class="spacer"></div>
-  <button class="chip-user" id="chip-user" onclick="openUser()">👤 usuário</button>
+  <button class="chip-user" id="chip-user" onclick="openUser()" title="Quem está operando" style="padding:11px 12px">👤</button>
   <button class="chip-user" id="chip-cfg" onclick="openCfg()" title="Menu da planilha ESD" style="margin-left:8px;padding:11px 12px">⚙️</button>
 </header>
 
@@ -377,28 +374,6 @@ section.screen.active{display:block}
   </div>
 
   <div id="main-vincs"></div>
-
-  <div class="status" style="margin-top:14px">
-    <div class="ico" style="background:#e8efff">📦</div>
-    <div class="grow">
-      <div class="t">Base ESD</div>
-      <div class="d" id="esd-resumo">Nenhuma planilha importada ainda</div>
-    </div>
-    <div style="text-align:center;flex:none">
-      <div style="font-size:20px;font-weight:800;color:var(--brand)" id="esd-pallets">0</div>
-      <div style="font-size:10px;color:var(--muted)">pallets</div>
-    </div>
-    <div style="text-align:center;flex:none">
-      <div style="font-size:20px;font-weight:800;color:var(--ok)" id="esd-volumes">0</div>
-      <div style="font-size:10px;color:var(--muted)">volumes</div>
-    </div>
-    <button class="esd-refresh no-print" onclick="esdSync(true)" title="Atualizar base ESD">🔄</button>
-  </div>
-
-  <div class="toggles no-print">
-    <label><input type="checkbox" id="tg-som" checked> 🔊 Som</label>
-    <label><input type="checkbox" id="tg-vib" checked> 📳 Vibração</label>
-  </div>
 
   <div class="bigbtns">
     <button class="bigbtn b-hist" onclick="goHist()">
@@ -659,30 +634,21 @@ function esdTotals(){
   const ks = Object.keys(esd.pallets || {});
   return { pallets: ks.length, volumes: ks.reduce((a,k)=>a+(esd.pallets[k].v||0),0) };
 }
-function renderEsd(){
+function renderEsd(){                          // resumo unificado (aparece no menu ⚙️)
   const t = esdTotals();
-  document.getElementById("esd-pallets").textContent = t.pallets;
-  document.getElementById("esd-volumes").textContent = t.volumes;
-  const r = document.getElementById("esd-resumo");
+  const r = document.getElementById("cfg-resumo");
+  if(!r) return;
   if(!esd.meta){ r.textContent = "Nenhuma planilha importada ainda"; return; }
   const d = new Date(esd.meta.em);
-  r.textContent = "Atualizada " + d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) +
+  r.textContent = t.pallets + " pallets · " + t.volumes + " volumes — atualizada " +
+                  d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) +
                   (esd.meta.por && esd.meta.por!=="—" ? " por " + esd.meta.por : "") +
                   (fbOk() ? "" : " · só neste aparelho");
 }
 
 /* ============ MENU ⚙️ · IMPORTAR / EXCLUIR BASE ============ */
 function openCfg(){
-  const t = esdTotals();
-  const r = document.getElementById("cfg-resumo");
-  if(esd.meta){
-    const d = new Date(esd.meta.em);
-    r.textContent = t.pallets + " pallets · " + t.volumes + " volumes — atualizada " +
-      d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) +
-      (fbOk() ? "" : " (só neste aparelho)");
-  }else{
-    r.textContent = "Nenhuma base importada ainda";
-  }
+  renderEsd();                                 // resumo sempre fresco ao abrir
   /* botão do confronto reflete o estado atual */
   const b = document.getElementById("btn-confronto");
   b.className = "bigbtn " + (confrontoOn ? "b-op" : "b-semrom");
@@ -848,7 +814,7 @@ function setModo(m){
 }
 
 /* ============ USUÁRIO ============ */
-function renderUser(){ document.getElementById("chip-user").textContent = "👤 " + (operador || "usuário"); }
+function renderUser(){ document.getElementById("chip-user").textContent = "👤"; }
 function openUser(){
   document.getElementById("inp-user").value = operador;
   document.getElementById("user-ov").classList.remove("hidden");
@@ -1364,12 +1330,11 @@ function renderVolCard(){
   const plan = ex ? ex.volumes : null;
   const conf = !!(ex && ex.confirmado);
   const manual = !!(ex && !ex.validado);
-  let msg, cls;
+  let msg = "", cls = "ok";
   if(conf){ cls = "conf"; msg = "✓ Quantidade confirmada pelo operador"; }
-  else if(plan == null){ cls = "ok"; msg = fis ? "ajuste pelas setas ou toque no número" : "informe a quantidade física conferida"; }
-  else if(fis === plan && fis > 0){ cls = "ok"; msg = "✓ quantidade bate — toque no ✓ para confirmar"; }
-  else if(fis < plan){ cls = "falta"; msg = "faltam " + (plan - fis) + " para a planilha"; }
-  else { cls = "falta"; msg = "sobram " + (fis - plan) + " em relação à planilha"; }
+  else if(plan != null && fis === plan && fis > 0){ cls = "ok"; msg = "✓ quantidade bate — toque no ✓ para confirmar"; }
+  else if(plan != null && fis < plan){ cls = "falta"; msg = "faltam " + (plan - fis) + " para a planilha"; }
+  else if(plan != null){ cls = "falta"; msg = "sobram " + (fis - plan) + " em relação à planilha"; }
   box.innerHTML = `
     <div class="volcard ${manual ? "manual" : ""}">
       ${plan != null ? `
@@ -1379,17 +1344,16 @@ function renderVolCard(){
       </div>
       ${manual ? `<div class="tagman">fora da planilha${ex.op?" · "+ex.op:""} · pallet ${ex.pallet||"—"}</div>` : ""}
       <div class="voldiv"></div>` : ""}
-      <div class="fislbl">Físico conferido</div>
+      <div class="fislbl">Quantidade</div>
       <div class="fisrow">
         <button class="stepbtn sb-menos" onclick="stepFis(-1)">−</button>
         <button class="fisnum" onclick="openQtd()" title="Toque para digitar">
           <div class="v ${plan!=null && fis===plan && fis>0 ? "bateu" : ""}">${fis}</div>
-          <div class="toq">toque no número p/ digitar</div>
         </button>
         <button class="stepbtn sb-mais" onclick="stepFis(1)">+</button>
         <button class="confbtn ${plan!=null ? "show" : ""} ${conf ? "ok" : ""}" onclick="confirmarQtdVinc()" title="Confirmar quantidade">✓</button>
       </div>
-      <div class="msgfis ${cls}">${msg}</div>
+      ${msg ? `<div class="msgfis ${cls}">${msg}</div>` : ""}
     </div>`;
 }
 function stepFis(d){
@@ -1857,18 +1821,17 @@ function feedback(tipo,msg,code){
   document.getElementById("flash-code").textContent = code||"";
   clearTimeout(flashTO); flashTO=setTimeout(()=>fl.classList.remove("show"), 850);
 
-  if(document.getElementById("tg-som").checked){
-    try{
-      const ctx = beepCtx || (beepCtx = new (window.AudioContext||window.webkitAudioContext)());
-      const play=(f,d,t)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
-        o.frequency.value=f;o.type="sine";g.gain.setValueAtTime(.18,ctx.currentTime+t);
-        g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+d);o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+d);};
-      if(tipo==="ok"){play(880,.09,0);play(1320,.13,.1);}
-      if(tipo==="warn"){play(520,.12,0);play(520,.12,.2);}
-      if(tipo==="err"){play(210,.4,0);}
-    }catch(e){}
-  }
-  if(document.getElementById("tg-vib").checked && navigator.vibrate){
+  /* som e vibração SEMPRE ativos (toggles removidos da tela) */
+  try{
+    const ctx = beepCtx || (beepCtx = new (window.AudioContext||window.webkitAudioContext)());
+    const play=(f,d,t)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=f;o.type="sine";g.gain.setValueAtTime(.18,ctx.currentTime+t);
+      o.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+d);o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+d);};
+    if(tipo==="ok"){play(880,.09,0);play(1320,.13,.1);}
+    if(tipo==="warn"){play(520,.12,0);play(520,.12,.2);}
+    if(tipo==="err"){play(210,.4,0);}
+  }catch(e){}
+  if(navigator.vibrate){
     navigator.vibrate(tipo==="ok"?60:tipo==="warn"?[70,60,70]:[220,120,220]);
   }
 }
@@ -1940,5 +1903,5 @@ loadConfronto();
 try{ history.replaceState({scr:"scr-main"}, ""); }catch(e){}   // base do botão voltar
 renderUser(); render(); go("scr-main");
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a27187f5bcb8f5ce',t:'MTc4NjA1NTg5OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
