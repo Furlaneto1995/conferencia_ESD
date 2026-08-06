@@ -1566,8 +1566,10 @@ function confirmFin(){
     }))
   };
   hist.unshift(rec); saveHistLS();
-  fbUploadRec(rec);                            // sobe o relatório pro Firebase (sem travar a tela)
+  fbUploadRec(rec);                            // ☁️ sobe o relatório pro Firebase
   renderReport(rec);
+  downloadCSV();                               // 📥 baixa uma cópia no aparelho (segurança extra)
+  feedback("ok","✓ Conferência finalizada","cópia baixada no aparelho + enviada pra nuvem");
   go("scr-rep");
 }
 
@@ -1712,7 +1714,10 @@ function buildCSV(){
     ["TOTAL","", temPlan?totPlan:"", totBob, temPlan?(nDiverg?"DIVERGÊNCIAS: "+nDiverg:"OK"):""]
   ];
   const csv = "\ufeffsep=;\n" + rows.map(r=>r.join(";")).join("\n");
-  const fname = "conferencia_" + fim.toISOString().slice(0,10) + "_" +
+  const nomeSlug = (rec.nome||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+                    .replace(/[^a-zA-Z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,30);
+  const fname = "conferencia_" + (nomeSlug ? nomeSlug + "_" : "") +
+                fim.toISOString().slice(0,10) + "_" +
                 fim.toTimeString().slice(0,5).replace(":","") + ".csv";
   return {csv, fname};
 }
@@ -1935,5 +1940,5 @@ loadConfronto();
 try{ history.replaceState({scr:"scr-main"}, ""); }catch(e){}   // base do botão voltar
 renderUser(); render(); go("scr-main");
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a270c7469a381b0e',t:'MTc4NjA0ODAwNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
