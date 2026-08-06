@@ -1,5 +1,5 @@
 /* Service Worker — Conferência de Bobinas (PWA offline) */
-const CACHE = "confere-v11";
+const CACHE = "confere-v12";
 const ASSETS = [
   "./",
   "./index.html",
