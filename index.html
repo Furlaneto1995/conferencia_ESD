@@ -338,6 +338,22 @@ section.screen.active{display:block}
 
   <div id="main-vincs"></div>
 
+  <div class="status" style="margin-top:14px">
+    <div class="ico" style="background:#e8efff">📦</div>
+    <div class="grow">
+      <div class="t">Base ESD</div>
+      <div class="d" id="esd-resumo">Nenhuma planilha importada ainda</div>
+    </div>
+    <div style="text-align:center;flex:none">
+      <div style="font-size:20px;font-weight:800;color:var(--brand)" id="esd-pallets">0</div>
+      <div style="font-size:10px;color:var(--muted)">pallets</div>
+    </div>
+    <div style="text-align:center;flex:none">
+      <div style="font-size:20px;font-weight:800;color:var(--ok)" id="esd-volumes">0</div>
+      <div style="font-size:10px;color:var(--muted)">volumes</div>
+    </div>
+  </div>
+
   <div class="toggles no-print">
     <label><input type="checkbox" id="tg-som" checked> 🔊 Som</label>
     <label><input type="checkbox" id="tg-vib" checked> 📳 Vibração</label>
@@ -349,6 +365,11 @@ section.screen.active{display:block}
       <span>CONFERÊNCIAS REALIZADAS</span>
       <span class="hcnt" id="hist-count">0</span>
     </button>
+    <button class="bigbtn b-hist" onclick="document.getElementById('file-csv').click()">
+      <span class="bico">📥</span>
+      <span>IMPORTAR PLANILHA ESD</span>
+    </button>
+    <input type="file" id="file-csv" accept=".csv,text/csv" class="hidden">
     <button class="bigbtn b-inst hidden" id="btn-install" onclick="installApp()">
       <span class="bico">📲</span>
       <span>INSTALAR APP</span>
@@ -478,6 +499,24 @@ section.screen.active{display:block}
   </div>
 </div>
 
+<!-- ============ ROMANEIO NÃO ENCONTRADO NA BASE ============ -->
+<div id="pallet-ov" class="user-ov hidden" style="padding:14px">
+  <div class="entry">
+    <div class="card-e" style="margin-top:10px">
+      <div class="eico">⚠️</div>
+      <h2>Fora da base ESD</h2>
+      <p id="pallet-rom" style="font-size:13px;font-weight:700;color:var(--err);word-break:break-word;margin-top:6px"></p>
+      <input id="inp-pallet" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Número do pallet">
+      <input id="inp-op-manual" autocomplete="off" placeholder="Número da OP">
+      <input id="inp-vol-manual" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Quantidade de volumes">
+      <div class="bigbtns">
+        <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="savePalletManual()">✓ CONFIRMAR</button>
+        <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closePallet()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ INSTALAR NO IPHONE ============ -->
 <div id="ios-ov" class="user-ov hidden" style="padding:14px">
   <div class="entry">
@@ -535,6 +574,94 @@ const ROMANEIOS = {
  "ROM-2026-058412":{ cliente:"Embalagens Vale S.A.", destino:"Guarulhos / SP", transp:"RotaForte Transp.", motorista:"J. Pereira · FZK-4A21" },
  "ROM-2026-058413":{ cliente:"Filmes Alfa Ltda.", destino:"S. José dos Campos / SP", transp:"TransCarga", motorista:"M. Souza · BRA-2E19" }
 };
+
+/* ============ BASE ESD · FIREBASE (Realtime Database via REST) ============
+   ▸ Cole aqui a URL do seu banco Firebase (ex.: https://seuapp-default-rtdb.firebaseio.com)
+   ▸ Sem URL configurada, o app funciona só com os dados salvos no aparelho */
+const FIREBASE_URL = "";
+const ESD_CACHE_KEY = "esd_cache_v1";
+let esd = { meta:null, pallets:{} };     // pallets: { "1234123": {v:15, e:"ESD"} }
+
+function fbOk(){ return /^https:\/\/.+/.test(FIREBASE_URL); }
+function esdLoadLocal(){ try{ const d = JSON.parse(localStorage.getItem(ESD_CACHE_KEY)); if(d) esd = d; }catch(e){} }
+function esdSaveLocal(){ try{ localStorage.setItem(ESD_CACHE_KEY, JSON.stringify(esd)); }catch(e){} }
+async function esdSync(){                 // baixa a base compartilhada (todo mundo com o link vê a mesma)
+  if(!fbOk()){ renderEsd(); return; }
+  try{
+    const r = await fetch(FIREBASE_URL + "/esd.json");
+    const data = await r.json();
+    if(data && data.pallets){ esd = data; esdSaveLocal(); }
+  }catch(e){}
+  renderEsd();
+}
+function esdTotals(){
+  const ks = Object.keys(esd.pallets || {});
+  return { pallets: ks.length, volumes: ks.reduce((a,k)=>a+(esd.pallets[k].v||0),0) };
+}
+function renderEsd(){
+  const t = esdTotals();
+  document.getElementById("esd-pallets").textContent = t.pallets;
+  document.getElementById("esd-volumes").textContent = t.volumes;
+  const r = document.getElementById("esd-resumo");
+  if(!esd.meta){ r.textContent = "Nenhuma planilha importada ainda"; return; }
+  const d = new Date(esd.meta.em);
+  r.textContent = "Atualizada " + d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) +
+                  (esd.meta.por && esd.meta.por!=="—" ? " por " + esd.meta.por : "") +
+                  (fbOk() ? "" : " · só neste aparelho");
+}
+
+/* ============ IMPORTAR PLANILHA (CSV) ============
+   Coluna N (14ª) = pallet · Coluna P (16ª) = endereço (só ESD) · Coluna T (20ª) = qtde_volumes */
+function importCsv(file){
+  const rd = new FileReader();
+  rd.onload = async ()=>{
+    const linhas = String(rd.result||"").split(/\r?\n/).filter(l=>l.trim());
+    if(linhas.length < 2){ feedback("err","Planilha vazia","arquivo sem linhas de dados"); return; }
+    const sep = (linhas[0].split(";").length >= linhas[0].split(",").length) ? ";" : ",";
+    const pallets = {};
+    let linhasEsd = 0;
+    for(let i=1; i<linhas.length; i++){                 // pula o cabeçalho
+      const col = linhas[i].split(sep).map(c=>c.trim().replace(/^"|"$/g,""));
+      if(col.length < 20) continue;
+      const end = (col[15]||"").toUpperCase();                     // P · endereço
+      if(!end.startsWith("ESD")) continue;                         // só ESD
+      const pallet = (col[13]||"").replace(/\D/g,"").replace(/^0+(?=\d)/,"");   // N · pallet
+      const vol = parseInt((col[19]||"").replace(/\D/g,""), 10) || 0;           // T · volumes
+      if(!pallet) continue;
+      if(!pallets[pallet]) pallets[pallet] = { v:0, e:col[15]||"ESD" };
+      pallets[pallet].v += vol;
+      linhasEsd++;
+    }
+    const qtd = Object.keys(pallets).length;
+    if(!qtd){ feedback("err","Nenhum pallet ESD","não achei linhas com endereço ESD"); return; }
+    esd = { meta:{ em:new Date().toISOString(), por:operador||"—", linhas:linhasEsd }, pallets };
+    esdSaveLocal(); renderEsd();
+    if(fbOk()){
+      feedback("warn","☁️ Enviando pro Firebase...", qtd+" pallets ESD");
+      try{
+        const r = await fetch(FIREBASE_URL + "/esd.json", { method:"PUT", body:JSON.stringify(esd) });
+        if(!r.ok) throw 0;
+        feedback("ok","✓ Base ESD atualizada", qtd+" pallets · visível pra todos com o link");
+      }catch(e){
+        feedback("err","Salvou só neste aparelho","sem acesso ao Firebase agora");
+      }
+    }else{
+      feedback("ok","✓ Planilha importada", qtd+" pallets ESD · só neste aparelho");
+    }
+  };
+  rd.readAsText(file, "UTF-8");
+}
+
+/* romaneio → pallet = últimos 7 dígitos do código bipado */
+function palletDoCodigo(code){
+  const d = (code||"").replace(/\D/g,"");
+  if(d.length < 7) return null;
+  return d.slice(-7).replace(/^0+(?=\d)/,"");
+}
+function buscarPallet(code){
+  const p = palletDoCodigo(code);
+  return (p && esd.pallets[p]) ? { pallet:p, volumes:esd.pallets[p].v, validado:true } : null;
+}
 
 /* ============ ESTADO ============ */
 let modo = "camera";
@@ -672,7 +799,7 @@ function onOP(code){
 }
 
 /* ============ VÍNCULOS (romaneio ou OP) ============ */
-function addVinculo(tipo, code, dados){
+function addVinculo(tipo, code, dados, extra){
   if(!inicio) inicio = new Date();
   let g = grupos.find(x=>x.tipo===tipo && x.cod===code);
   if(g){
@@ -680,7 +807,7 @@ function addVinculo(tipo, code, dados){
     renderVincCard();
     feedback("warn", (tipo==="ROM"?"Romaneio já lido":"OP já lida"), "seguindo com este vínculo");
   } else {
-    grupos.push({ tipo, cod:code, dados, bobinas:[], qManual:0 });
+    grupos.push({ tipo, cod:code, dados, bobinas:[], qManual:0, extra:extra||null });
     gAtual = grupos.length-1;
     renderVincCard();
     feedback("ok", (tipo==="ROM"?"Romaneio aberto":"OP vinculada"), code);
@@ -689,10 +816,49 @@ function addVinculo(tipo, code, dados){
 }
 
 function onRomaneio(code){
-  // qualquer código de barras lido aqui é o romaneio; dados viriam do ERP (mock)
   const d = ROMANEIOS[code] || { cliente:"—", destino:"—", transp:"—", motorista:"—" };
-  addVinculo("ROM", code, d);
-  closeCam(); go("scr-bob");          // NÃO abre câmera automática
+  const baseVazia = !Object.keys(esd.pallets||{}).length;
+  const hit = buscarPallet(code);
+  if(hit){                                        // ✔ encontrou na base ESD
+    addVinculo("ROM", code, d, hit);
+    closeCam(); go("scr-bob");                    // NÃO abre câmera automática
+  }else if(baseVazia){                            // sem planilha importada → segue sem validar (provisório)
+    feedback("warn","Base ESD vazia","romaneio seguiu sem validação");
+    addVinculo("ROM", code, d, null);
+    closeCam(); go("scr-bob");
+  }else{                                          // ✘ fora da base → erro + entrada manual
+    feedback("err","Fora da base ESD","informe os dados manualmente");
+    abrirPalletManual(code, palletDoCodigo(code));
+  }
+}
+
+/* ============ ROMANEIO FORA DA BASE · entrada manual ============ */
+let romPendente = null;
+function abrirPalletManual(code, pallet){
+  romPendente = code;
+  document.getElementById("pallet-rom").textContent = "Romaneio bipado: " + code;
+  document.getElementById("inp-pallet").value = pallet || "";
+  document.getElementById("inp-op-manual").value = "";
+  document.getElementById("inp-vol-manual").value = "";
+  closeCam();
+  document.getElementById("pallet-ov").classList.remove("hidden");
+  setTimeout(()=>document.getElementById(pallet ? "inp-op-manual" : "inp-pallet").focus(), 200);
+}
+function closePallet(){
+  romPendente = null;
+  document.getElementById("pallet-ov").classList.add("hidden");
+  focusCollector();
+}
+function savePalletManual(){
+  const pallet = document.getElementById("inp-pallet").value.trim().replace(/\D/g,"").replace(/^0+(?=\d)/,"");
+  const op = document.getElementById("inp-op-manual").value.trim().toUpperCase();
+  const vol = parseInt(document.getElementById("inp-vol-manual").value, 10);
+  if(!pallet){ feedback("warn","Informe o número do pallet",""); return; }
+  if(!vol || vol<1){ feedback("warn","Informe a quantidade de volumes",""); return; }
+  const code = romPendente || ("PALLET-"+pallet);
+  addVinculo("ROM", code, { cliente:"—", destino:"—", transp:"—", motorista:"—" },
+             { pallet, op, volumes:vol, validado:false });
+  closePallet(); go("scr-bob");
 }
 
 function onBobina(code){
@@ -963,6 +1129,7 @@ function focusCollector(){
   if(!document.getElementById("exp-ov").classList.contains("hidden")) return;
   if(!document.getElementById("del-ov").classList.contains("hidden")) return;
   if(!document.getElementById("ios-ov").classList.contains("hidden")) return;
+  if(!document.getElementById("pallet-ov").classList.contains("hidden")) return;
   if(document.getElementById("scr-op").classList.contains("active")) return;
   if(document.getElementById("scr-fin").classList.contains("active")) return;
   /* se já existe outro input com foco, não interrompe a digitação */
@@ -978,11 +1145,17 @@ function renderVincCard(){
   const card = document.getElementById("vinc-card");
   const g = gA();
   if(g && g.tipo==="ROM"){
+    const ex = g.extra;
+    const linhaEsd = ex
+      ? `<div class="d" style="font-weight:800;margin-top:3px;color:${ex.validado?"var(--ok)":"var(--err)"}">
+           ${ex.validado?"✓ na base ESD":"⚠️ fora da base (manual)"} · Pallet ${ex.pallet} · ${ex.volumes} volume${ex.volumes===1?"":"s"}${ex.op?" · OP "+ex.op:""}
+         </div>` : "";
     card.innerHTML = `
       <div class="grow" style="text-align:center">
         <div class="d" style="font-weight:700;color:var(--muted);font-size:11px;letter-spacing:.6px">ROMANEIO</div>
         <div class="vbig">${g.cod}</div>
         <div class="d">${g.dados.cliente} · ${g.dados.destino}</div>
+        ${linhaEsd}
       </div>`;
   } else if(g){
     card.innerHTML = `
@@ -1014,7 +1187,7 @@ function renderMainVincs(){
           <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
           <div class="grow">
             <div class="t">${g.cod}</div>
-            <div class="d">${g.tipo==="ROM" ? g.dados.cliente+" · "+g.dados.destino : "Sem romaneio"}</div>
+            <div class="d">${g.tipo==="ROM" ? g.dados.cliente+" · "+g.dados.destino : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.validado?"":" ⚠️"}`:""}</div>
           </div>
           <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
           <span class="chev ${mainExpandido===i?"open":""}" id="mv-chev-${i}">▾</span>
@@ -1114,7 +1287,7 @@ function renderFin(){
           <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
           <div class="grow">
             <div class="t">${g.cod}</div>
-            <div class="d">${g.tipo==="ROM" ? (g.dados.cliente+" · "+g.dados.destino) : "Sem romaneio"}</div>
+            <div class="d">${g.tipo==="ROM" ? (g.dados.cliente+" · "+g.dados.destino) : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.validado?"":" ⚠️"}`:""}</div>
           </div>
           <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
           <span class="chev ${finExpandido===i?"open":""}">▾</span>
@@ -1153,7 +1326,7 @@ function confirmFin(){
     modo, dups,
     inicio: (inicio||fim).toISOString(), fim: fim.toISOString(),
     grupos: grupos.map(g=>({
-      tipo:g.tipo, cod:g.cod, dados:g.dados,
+      tipo:g.tipo, cod:g.cod, dados:g.dados, extra:g.extra||null,
       bobinas:g.bobinas.map(b=>({cod:b.cod,hora:b.hora})),
       qManual:g.qManual||0
     }))
@@ -1172,6 +1345,8 @@ function renderReport(rec){
   const nOP  = rec.grupos.filter(g=>g.tipo==="OP").length;
   const totBob = rec.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
   const totLid = rec.grupos.reduce((a,g)=>a+g.bobinas.length,0);
+  const foraBase = rec.grupos.filter(g=>g.extra && !g.extra.validado).length;
+  const palletsOk = rec.grupos.filter(g=>g.extra && g.extra.validado).length;
   document.getElementById("report").innerHTML = `
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <div><h2>Relatório de Conferência${rec.nome?": "+rec.nome:""}</h2><p style="font-size:12px;color:var(--muted)">Gerado em ${fim.toLocaleString("pt-BR")}</p></div>
@@ -1184,6 +1359,7 @@ function renderReport(rec){
       <div><b>Quantidade de romaneios / OP's:</b> ${nRom} / ${nOP}</div>
       <div><b>Bobinas / pacotes:</b> ${totBob} (lidos ${totLid} + informados ${totBob-totLid})</div>
       <div><b>Leitura via:</b> ${rec.modo==="camera"?"Câmera":"Coletor de dados"}</div>
+      ${palletsOk||foraBase ? `<div><b>Base ESD:</b> ${palletsOk} romaneio${palletsOk===1?"":"s"} validado${palletsOk===1?"":"s"}${foraBase?` · <span style="color:var(--err);font-weight:800">⚠️ ${foraBase} fora da base</span>`:""}</div>` : ""}
     </div>
     <table class="stable">
       <thead><tr><th>Romaneio</th><th class="num" style="width:110px">QTD</th></tr></thead>
@@ -1207,6 +1383,8 @@ function buildCSV(){
   const nOP  = rec.grupos.filter(g=>g.tipo==="OP").length;
   const totBob = rec.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
   const totLid = rec.grupos.reduce((a,g)=>a+g.bobinas.length,0);
+  const foraBase = rec.grupos.filter(g=>g.extra && !g.extra.validado).length;
+  const palletsOk = rec.grupos.filter(g=>g.extra && g.extra.validado).length;
   const rows = [
     ["RELATÓRIO DE CONFERÊNCIA"],
     ["Gerado em", fim.toLocaleString("pt-BR")],
@@ -1215,6 +1393,7 @@ function buildCSV(){
     ["Quantidade de romaneios / OP's", nRom+" / "+nOP],
     ["Bobinas / pacotes", totBob+" (lidos "+totLid+" + informados "+(totBob-totLid)+")"],
     ["Leitura via", rec.modo==="camera"?"Câmera":"Coletor de dados"],
+    ...((palletsOk||foraBase) ? [["Base ESD", palletsOk+" validado(s)"+(foraBase?" · "+foraBase+" FORA DA BASE":"")]] : []),
     [],
     ["Romaneio","QTD"],
     ...rec.grupos.map(g=>[(g.tipo==="OP"?"OP ":"")+g.cod, g.bobinas.length+(g.qManual||0)]),
@@ -1394,6 +1573,16 @@ if(window.matchMedia("(pointer:coarse)").matches){
   document.addEventListener("dragstart", e=>e.preventDefault());
 }
 
+/* ============ IMPORTAR · input de arquivo ============ */
+document.getElementById("file-csv").addEventListener("change", e=>{
+  if(e.target.files && e.target.files[0]) importCsv(e.target.files[0]);
+  e.target.value = "";
+});
+/* Enter navega nos campos da entrada manual */
+document.getElementById("inp-pallet").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("inp-op-manual").focus(); });
+document.getElementById("inp-op-manual").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("inp-vol-manual").focus(); });
+document.getElementById("inp-vol-manual").addEventListener("keydown",e=>{ if(e.key==="Enter") savePalletManual(); });
+
 /* boot */
 modo = null;                                   // força setModo aplicar classes no boot
 loadState();                                   // restaura conferência salva (se houver)
@@ -1402,7 +1591,8 @@ if(!modo){
   else setModo("camera");
 }
 loadHist();
+esdLoadLocal(); renderEsd(); esdSync();        // base ESD: cache local + sincroniza com o Firebase
 renderUser(); render(); go("scr-main");
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a22d86c7ce676d55',t:'MTc4NTM0MjgxOA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a26ed583588b920d',t:'MTc4NjAyNzYxNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
