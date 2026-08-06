@@ -131,6 +131,8 @@ section.screen.active{display:block}
 .msgfis.ok{color:var(--ok)}
 .msgfis.falta{color:var(--err)}
 .msgfis.conf{color:var(--ok);background:var(--okbg);border-radius:10px;padding:8px}
+/* botão Voltar sempre fixo no menu ⚙️ */
+.cfg-foot{position:sticky;bottom:0;background:#fff;margin:16px -18px -18px;padding:12px 18px 18px;border-top:1px solid var(--line);border-radius:0 0 18px 18px}
 .b-hist{min-height:72px;font-size:16px;background:#fff;color:#31507c;border:2.5px solid #c3d2e2;box-shadow:none;justify-content:flex-start;text-align:left;padding:14px 16px}
 .b-hist .bico{font-size:24px}
 .b-hist .hcnt{margin-left:auto;background:var(--brand);color:#fff;border-radius:999px;min-width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;padding:0 8px;flex:none}
@@ -376,11 +378,6 @@ section.screen.active{display:block}
   <div id="main-vincs"></div>
 
   <div class="bigbtns">
-    <button class="bigbtn b-hist" onclick="goHist()">
-      <span class="bico">📋</span>
-      <span>CONFERÊNCIAS REALIZADAS</span>
-      <span class="hcnt" id="hist-count">0</span>
-    </button>
     <input type="file" id="file-csv" accept=".csv,text/csv" class="hidden">
     <button class="bigbtn b-inst hidden" id="btn-install" onclick="installApp()">
       <span class="bico">📲</span>
@@ -501,6 +498,11 @@ section.screen.active{display:block}
       <h2>Planilha ESD</h2>
       <p id="cfg-resumo" style="font-size:13px;font-weight:700;color:var(--muted);margin-top:8px;word-break:break-word">—</p>
       <div class="bigbtns">
+        <button class="bigbtn b-hist" onclick="closeCfg();goHist()">
+          <span class="bico">📋</span>
+          <span>CONFERÊNCIAS REALIZADAS</span>
+          <span class="hcnt" id="hist-count">0</span>
+        </button>
         <button class="bigbtn" id="btn-confronto" style="min-height:64px;font-size:15px" onclick="toggleConfronto()">
           <span class="bico" id="ic-confronto">🛡️</span><span id="tx-confronto">CONFRONTO: ATIVO</span>
         </button>
@@ -513,7 +515,9 @@ section.screen.active{display:block}
         <button class="bigbtn b-del" style="min-height:64px;font-size:16px" onclick="delBaseEsd()">
           <span class="bico">🗑️</span><span>EXCLUIR BASE ESD</span>
         </button>
-        <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closeCfg()">Voltar</button>
+      </div>
+      <div class="cfg-foot no-print">
+        <button class="bigbtn b-rom" style="min-height:56px;font-size:15px;width:100%" onclick="closeCfg()">Voltar</button>
       </div>
     </div>
   </div>
@@ -1392,15 +1396,17 @@ function renderMainVincs(){
     <div class="section-title">Nesta conferência (${grupos.length} vínculo${grupos.length>1?"s":""} · ${totalBob()} bobina${totalBob()>1?"s":""})</div>
     ${grupos.map((g,i)=>`
       <div class="hist-card">
-        <button class="hist-head" onclick="mainToggle(${i})">
-          <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
-          <div class="grow">
-            <div class="t">${g.cod}</div>
-            <div class="d">${g.tipo==="ROM" ? g.dados.cliente+" · "+g.dados.destino : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.op?" · "+g.extra.op:""}${g.extra.validado?"":" ⚠️"}`:""}</div>
-          </div>
-          <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
-          <span class="chev ${mainExpandido===i?"open":""}" id="mv-chev-${i}">▾</span>
-        </button>
+        <div class="hist-head" style="display:flex;align-items:center;gap:11px;padding:13px 14px">
+          <button class="grow" style="display:flex;align-items:center;gap:11px;text-align:left;min-width:0;padding:0" onclick="selecionarVinc(${i})">
+            <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
+            <div class="grow">
+              <div class="t">${g.cod}</div>
+              <div class="d">${g.tipo==="ROM" ? g.dados.cliente+" · "+g.dados.destino : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.op?" · "+g.extra.op:""}${g.extra.validado?"":" ⚠️"}`:""}</div>
+            </div>
+            <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
+          </button>
+          <button class="chev ${mainExpandido===i?"open":""}" id="mv-chev-${i}" style="padding:10px 6px;font-size:15px" onclick="mainToggle(${i})" title="Detalhes">▾</button>
+        </div>
         <div class="hist-body ${mainExpandido===i?"":"hidden"}" id="mv-body-${i}">
           ${g.bobinas.map((b,j)=>`
             <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
@@ -1411,7 +1417,6 @@ function renderMainVincs(){
             <button class="del-b" onclick="delManual(${i})" title="Apagar">🗑️</button></div>` : ""}
           ${!g.bobinas.length && !(g.qManual||0) ? '<div class="empty">Sem leituras neste vínculo ainda.</div>' : ""}
           <div class="hist-actions">
-            <button class="ha-rep" onclick="selecionarVinc(${i})">📦 Ler bobinas aqui</button>
             <button class="ha-del" onclick="delVinculo(${i})">🗑️ Apagar ${g.tipo==="ROM"?"romaneio":"OP"}</button>
           </div>
         </div>
@@ -1903,5 +1908,5 @@ loadConfronto();
 try{ history.replaceState({scr:"scr-main"}, ""); }catch(e){}   // base do botão voltar
 renderUser(); render(); go("scr-main");
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a27187f5bcb8f5ce',t:'MTc4NjA1NTg5OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2719ad1ec054f8c',t:'MTc4NjA1NjY3MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
