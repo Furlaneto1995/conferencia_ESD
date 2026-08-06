@@ -578,7 +578,7 @@ const ROMANEIOS = {
 /* ============ BASE ESD · FIREBASE (Realtime Database via REST) ============
    ▸ Cole aqui a URL do seu banco Firebase (ex.: https://seuapp-default-rtdb.firebaseio.com)
    ▸ Sem URL configurada, o app funciona só com os dados salvos no aparelho */
-const FIREBASE_URL = "";
+const FIREBASE_URL = "https://conf-esd-default-rtdb.firebaseio.com";
 const ESD_CACHE_KEY = "esd_cache_v1";
 let esd = { meta:null, pallets:{} };     // pallets: { "1234123": {v:15, e:"ESD"} }
 
@@ -1594,5 +1594,5 @@ loadHist();
 esdLoadLocal(); renderEsd(); esdSync();        // base ESD: cache local + sincroniza com o Firebase
 renderUser(); render(); go("scr-main");
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a26ed583588b920d',t:'MTc4NjAyNzYxNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
