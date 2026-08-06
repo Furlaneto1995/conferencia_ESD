@@ -100,6 +100,40 @@ section.screen.active{display:block}
 .b-conf{min-height:72px;font-size:16px;color:#0b7a48;background:#fff;border:2.5px solid #7cc7a3;box-shadow:none}
 .b-conf .bico{font-size:24px}
 .b-conf.ok{background:linear-gradient(135deg,#0e9f5d,#0b7a48);color:#fff;border-style:none}
+
+/* ============ CARD VOLUMES + FÍSICO (stepper) ============ */
+.volcard{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:16px;margin-top:14px}
+.volplan{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.volplan .lbl{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
+.volplan .n{font-size:32px;font-weight:800;color:var(--ok);line-height:1}
+.volcard.manual .volplan .n{color:var(--err)}
+.volcard .tagman{font-size:10.5px;font-weight:800;color:var(--err);margin-top:3px;text-align:right}
+.voldiv{border-top:1.5px dashed var(--line);margin:12px 0 12px}
+.fislbl{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;text-align:center;margin-bottom:10px}
+.fisrow{display:flex;align-items:center;gap:10px}
+.stepbtn{
+  flex:none;width:64px;height:64px;border-radius:16px;font-size:30px;font-weight:800;color:#fff;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(10,30,55,.16);user-select:none;
+}
+.stepbtn:active{transform:scale(.94)}
+.sb-menos{background:linear-gradient(135deg,#8a9bb0,#5f7289)}
+.sb-mais{background:linear-gradient(135deg,var(--brand),var(--brand2))}
+.fisnum{flex:1;min-width:0;text-align:center;border-radius:14px;padding:4px}
+.fisnum:active{background:#eef2f7}
+.fisnum .v{font-size:46px;font-weight:800;line-height:1.05;color:var(--ink)}
+.fisnum .v.bateu{color:var(--ok)}
+.fisnum .toq{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.4px}
+.confbtn{
+  flex:none;width:64px;height:64px;border-radius:16px;font-size:26px;color:#0b7a48;background:#fff;
+  border:2.5px solid #7cc7a3;display:none;align-items:center;justify-content:center;
+}
+.confbtn.show{display:flex}
+.confbtn:active{transform:scale(.94)}
+.confbtn.ok{background:linear-gradient(135deg,#0e9f5d,#0b7a48);color:#fff;border-style:none}
+.msgfis{text-align:center;font-size:12.5px;font-weight:700;margin-top:10px}
+.msgfis.ok{color:var(--ok)}
+.msgfis.falta{color:var(--err)}
+.msgfis.conf{color:var(--ok);background:var(--okbg);border-radius:10px;padding:8px}
 .b-hist{min-height:72px;font-size:16px;background:#fff;color:#31507c;border:2.5px solid #c3d2e2;box-shadow:none;justify-content:flex-start;text-align:left;padding:14px 16px}
 .b-hist .bico{font-size:24px}
 .b-hist .hcnt{margin-left:auto;background:var(--brand);color:#fff;border-radius:999px;min-width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;padding:0 8px;flex:none}
@@ -395,35 +429,13 @@ section.screen.active{display:block}
   </div>
 </section>
 
-<!-- ============ TELA 2 · LER BOBINAS ============ -->
+<!-- ============ TELA 2 · ROMANEIO (quantidade física) ============ -->
 <section id="scr-bob" class="screen">
   <button class="voltar no-print" onclick="go('scr-main')">← início</button>
 
   <div class="status" id="vinc-card"></div>
 
-  <div class="bigbtns">
-    <input id="inp-bob" class="big-col if-coletor" inputmode="none" autocomplete="off" placeholder="⌨️ BIPE A BOBINA">
-    <button class="bigbtn b-bob if-camera" onclick="openCam('bob')">
-      <span class="bico">📦</span>
-      <span>LER BOBINA</span>
-    </button>
-    <button class="bigbtn b-qtd" onclick="openQtd()">
-      <span class="bico">🔢</span>
-      <span>INFORMAR QUANTIDADE</span>
-    </button>
-    <button class="bigbtn b-conf hidden no-print" id="btn-conf" onclick="toggleConfirmarQtd()">
-      <span class="bico">✓</span>
-      <span id="btn-conf-txt">CONFIRMAR QTD</span>
-    </button>
-  </div>
-
-  <div class="counter">
-    <div class="num" id="ct-num">0</div>
-    <div class="lbl">bobinas<br>neste romaneio</div>
-  </div>
-
-  <div class="section-title">Últimas leituras</div>
-  <div class="scanlist" id="scanlist"><div class="empty">Nenhuma leitura ainda.</div></div>
+  <div id="vol-card"></div>
 </section>
 
 <!-- ============ TELA 3 · FINALIZAR ============ -->
@@ -481,8 +493,8 @@ section.screen.active{display:block}
   <div class="entry">
     <div class="card-e" style="margin-top:10px">
       <div class="eico">🔢</div>
-      <h2>Informar quantidade</h2>
-      <input id="inp-qtd" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="0">
+      <h2>Quantidade física</h2>
+      <input id="inp-qtd" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Quantidade conferida">
       <div class="bigbtns">
         <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="saveQtd()">✓ CONFIRMAR</button>
         <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closeQtd()">Voltar</button>
@@ -514,6 +526,9 @@ section.screen.active{display:block}
       <h2>Planilha ESD</h2>
       <p id="cfg-resumo" style="font-size:13px;font-weight:700;color:var(--muted);margin-top:8px;word-break:break-word">—</p>
       <div class="bigbtns">
+        <button class="bigbtn" id="btn-confronto" style="min-height:64px;font-size:15px" onclick="toggleConfronto()">
+          <span class="bico" id="ic-confronto">🛡️</span><span id="tx-confronto">CONFRONTO: ATIVO</span>
+        </button>
         <button class="bigbtn b-inst" style="min-height:64px;font-size:16px" onclick="esdSync(true)">
           <span class="bico">🔄</span><span>ATUALIZAR BASE</span>
         </button>
@@ -585,7 +600,7 @@ section.screen.active{display:block}
   <video id="cam-video" playsinline webkit-playsinline muted autoplay></video>
   <div id="cam-reader"></div>
   <div class="cam-top">
-    <div class="mode" id="cam-mode">📦 Lendo bobinas</div>
+    <div class="mode" id="cam-mode">🧾 Lendo romaneio</div>
     <div class="cnt" id="cam-cnt">0</div>
   </div>
   <div class="cam-frame"></div>
@@ -668,6 +683,12 @@ function openCfg(){
   }else{
     r.textContent = "Nenhuma base importada ainda";
   }
+  /* botão do confronto reflete o estado atual */
+  const b = document.getElementById("btn-confronto");
+  b.className = "bigbtn " + (confrontoOn ? "b-op" : "b-semrom");
+  document.getElementById("ic-confronto").textContent = confrontoOn ? "🛡️" : "🔓";
+  document.getElementById("tx-confronto").textContent = confrontoOn
+    ? "CONFRONTO COM PLANILHA: ATIVO" : "CONFRONTO DESATIVADO · lê todos os romaneios";
   document.getElementById("cfg-ov").classList.remove("hidden");
 }
 function closeCfg(){ document.getElementById("cfg-ov").classList.add("hidden"); focusCollector(); }
@@ -777,7 +798,8 @@ function loadState(){
   try{
     const s = JSON.parse(localStorage.getItem(STATE_KEY));
     if(!s) return;
-    grupos  = s.grupos  || [];
+    grupos  = (Array.isArray(s.grupos)?s.grupos:[]).filter(g=>g && typeof g==="object");
+    grupos.forEach(g=>{ if(!Array.isArray(g.bobinas)) g.bobinas=[]; g.qManual = g.qManual||0; });
     gAtual  = (s.gAtual!=null) ? s.gAtual : (grupos.length?grupos.length-1:-1);
     dups    = s.dups || 0;
     seq     = s.seq  || 0;
@@ -842,7 +864,18 @@ function saveUser(){
 document.getElementById("inp-user").addEventListener("keydown",e=>{ if(e.key==="Enter") saveUser(); });
 
 /* ============ NAVEGAÇÃO ============ */
-function go(id){
+/* ============ BOTÃO VOLTAR DO CELULAR (Android/PWA) ============
+   Cada tela empurra um estado no histórico; o gesto/botão "voltar"
+   navega dentro do app em vez de sair. Na tela inicial, pede
+   "voltar" 2× seguidas para sair. */
+let navStack = ["scr-main"], lastBackT = 0, exitingApp = false;
+function navPush(id){
+  if(history.state && history.state.scr === id && navStack[navStack.length-1] === id) return;
+  try{ history.pushState({scr:id}, ""); }catch(e){}
+  if(navStack[navStack.length-1] !== id) navStack.push(id);
+}
+function go(id, fromPop){
+  if(!fromPop) navPush(id);
   document.querySelectorAll("section.screen").forEach(s=>s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
   const ft = document.getElementById("footer"), btn = document.getElementById("btn-fin");
@@ -867,6 +900,44 @@ function go(id){
   if(id==="scr-op") setTimeout(()=>document.getElementById("inp-op").focus(),200);
   focusCollector();
 }
+/* gesto/botão voltar do celular */
+window.addEventListener("popstate", ()=>{
+  if(exitingApp){ exitingApp = false; return; }               // ignora o pop do próprio exit
+  /* 1) câmera aberta → fecha a câmera */
+  if(!document.getElementById("cam").classList.contains("hidden")){
+    closeCam();
+    try{ history.pushState(history.state||{scr:navStack[navStack.length-1]}, ""); }catch(e){}
+    return;
+  }
+  /* 2) algum overlay aberto → fecha o overlay (cancela) */
+  const fechadores = {
+    "pallet-ov":()=>closePallet(), "cfg-ov":()=>closeCfg(), "user-ov":()=>closeUser(),
+    "qtd-ov":()=>closeQtd(), "exp-ov":()=>closeExp(), "del-ov":()=>closeConf(), "ios-ov":()=>closeIos()
+  };
+  for(const id in fechadores){
+    if(!document.getElementById(id).classList.contains("hidden")){
+      fechadores[id]();
+      try{ history.pushState({scr:navStack[navStack.length-1]}, ""); }catch(e){}
+      return;
+    }
+  }
+  /* 3) tela inicial → duplo "voltar" para sair */
+  if(navStack.length <= 1){
+    const now = Date.now();
+    if(now - lastBackT < 2000){                                // 2º voltar seguido → sai do app
+      exitingApp = true;
+      try{ history.back(); }catch(e){}
+      return;
+    }
+    lastBackT = now;
+    try{ history.pushState({scr:"scr-main"}, ""); }catch(e){}
+    feedback("warn", "Toque voltar de novo para sair", "");
+    return;
+  }
+  /* 4) volta para a tela anterior */
+  navStack.pop();
+  go(navStack[navStack.length-1], true);
+});
 function foot(){
   if(document.getElementById("btn-fin").dataset.mode==="fin") goFin();
   else go("scr-main");           // "trocar" = volta pra principal e lê outro romaneio/OP
@@ -905,10 +976,29 @@ function addVinculo(tipo, code, dados, extra){
   render();
 }
 
+/* ============ CONFRONTO COM A PLANILHA (liga/desliga no menu ⚙️) ============ */
+const CONFRONTO_KEY = "confronto_v1";
+let confrontoOn = true;
+function loadConfronto(){ try{ confrontoOn = localStorage.getItem(CONFRONTO_KEY) !== "0"; }catch(e){ confrontoOn = true; } }
+function saveConfronto(){ try{ localStorage.setItem(CONFRONTO_KEY, confrontoOn ? "1" : "0"); }catch(e){} }
+function toggleConfronto(){
+  confrontoOn = !confrontoOn;
+  saveConfronto();
+  feedback("ok", confrontoOn ? "🛡️ Confronto ATIVADO" : "🔓 Confronto DESATIVADO",
+           confrontoOn ? "romaneio fora da planilha será barrado" : "todos os romaneios serão aceitos");
+  openCfg();                                     // repinta o botão do menu
+}
+
 function onRomaneio(code){
   const d = ROMANEIOS[code] || { cliente:"—", destino:"—", transp:"—", motorista:"—" };
-  const baseVazia = !Object.keys(esd.pallets||{}).length;
   const hit = buscarPallet(code);
+  /* confronto desligado → aceita TODOS os romaneios (vincula a planilha quando encontrar) */
+  if(!confrontoOn){
+    addVinculo("ROM", code, d, hit || null);
+    closeCam(); go("scr-bob");
+    return;
+  }
+  const baseVazia = !Object.keys(esd.pallets||{}).length;
   if(hit){                                        // ✔ encontrou na base ESD
     addVinculo("ROM", code, d, hit);
     closeCam(); go("scr-bob");                    // NÃO abre câmera automática
@@ -972,19 +1062,21 @@ function onBobina(code){
 
 /* ============ INFORMAR QUANTIDADE (sem bip) ============ */
 function openQtd(){
-  if(!gA()){ feedback("warn","Leia o romaneio primeiro","ou informe uma OP"); return; }
-  document.getElementById("inp-qtd").value = "";
+  const g = gA();
+  if(!g){ feedback("warn","Leia o romaneio primeiro","ou informe uma OP"); return; }
+  document.getElementById("inp-qtd").value = (g.qManual||0) > 0 ? g.qManual : "";   // já vem preenchido p/ ajustar
   document.getElementById("qtd-ov").classList.remove("hidden");
-  setTimeout(()=>document.getElementById("inp-qtd").focus(),150);   // abre teclado numérico
+  setTimeout(()=>{ const i=document.getElementById("inp-qtd"); i.focus(); i.select&&i.select(); },150);   // abre teclado numérico
 }
 function closeQtd(){ document.getElementById("qtd-ov").classList.add("hidden"); focusCollector(); }
 function saveQtd(){
   const g = gA(); if(!g){ closeQtd(); return; }
   const v = parseInt(document.getElementById("inp-qtd").value, 10);
-  if(!v || v<1 || v>9999){ feedback("warn","Quantidade inválida","digite um número maior que zero"); return; }
-  g.qManual = (g.qManual||0) + v;
+  if(isNaN(v) || v<0 || v>9999){ feedback("warn","Quantidade inválida","digite um número de 0 a 9999"); return; }
+  g.qManual = v;                                   // físico conferido (substitui, não soma)
+  if(g.extra) g.extra.confirmado = false;          // alterou o físico → perde o check
   if(!inicio) inicio = new Date();
-  feedback("ok","✓ +"+v+" unidade"+(v>1?"s":""), "somada manualmente em "+g.cod);
+  feedback("ok","✓ "+v+" unidade"+(v===1?"":"s"), "físico conferido em "+g.cod);
   bump(); closeQtd(); render();
 }
 document.getElementById("inp-qtd").addEventListener("keydown",e=>{ if(e.key==="Enter") saveQtd(); });
@@ -1019,6 +1111,7 @@ function delManual(gi){
   const g = grupos[gi]; if(!g || !(g.qManual>0)) return;
   askConfirm("Apagar quantidade informada?", "+"+g.qManual+" un em "+g.cod, ()=>{
     g.qManual = 0;
+    if(g.extra) g.extra.confirmado = false;
     render(); refreshScreens();
   });
 }
@@ -1200,6 +1293,7 @@ function autoSubmit(inp){
 }
 ["inp-home","inp-bob"].forEach(id=>{
   const inp = document.getElementById(id);
+  if(!inp) return;                                // campo não existe nesta tela
   inp.addEventListener("keydown", e=>{
     if(e.key==="Enter"){ clearTimeout(colTimer); onCode(inp.value); inp.value=""; }
   });
@@ -1226,9 +1320,9 @@ function focusCollector(){
   /* se já existe outro input com foco, não interrompe a digitação */
   const ae = document.activeElement;
   if(ae && ae.tagName==="INPUT" && ae.id!=="inp-home" && ae.id!=="inp-bob") return;
-  const id = document.getElementById("scr-bob").classList.contains("active") ? "inp-bob" :
-             document.getElementById("scr-main").classList.contains("active") ? "inp-home" : null;
-  if(id) document.getElementById(id).focus();
+  const id = document.getElementById("scr-main").classList.contains("active") ? "inp-home" : null;
+  const el = id && document.getElementById(id);
+  if(el) el.focus();
 }
 
 /* ============ RENDER ============ */
@@ -1236,22 +1330,11 @@ function renderVincCard(){
   const card = document.getElementById("vinc-card");
   const g = gA();
   if(g && g.tipo==="ROM"){
-    const ex = g.extra;
-    const linhaEsd = ex
-      ? `<div style="margin-top:6px;background:${ex.validado?"var(--okbg)":"var(--errbg)"};border-radius:12px;padding:8px 10px">
-           <span style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.6px">VOLUMES</span>
-           <div style="font-size:24px;font-weight:800;color:${ex.validado?"var(--ok)":"var(--err)"};line-height:1.1">
-             ${ex.volumes}
-             ${ex.confirmado?'<span style="font-size:14px;color:var(--ok)">✓ confirmado</span>':''}
-           </div>
-           ${ex.validado?"":'<div style="font-size:10.5px;font-weight:700;color:var(--err)">informado manualmente (fora da planilha)</div>'}
-         </div>` : "";
     card.innerHTML = `
       <div class="grow" style="text-align:center">
         <div class="d" style="font-weight:700;color:var(--muted);font-size:11px;letter-spacing:.6px">ROMANEIO</div>
         <div class="vbig">${g.cod}</div>
         <div class="d">${g.dados.cliente} · ${g.dados.destino}</div>
-        ${linhaEsd}
       </div>`;
   } else if(g){
     card.innerHTML = `
@@ -1268,45 +1351,72 @@ function renderVincCard(){
         <div class="d">Leia um romaneio ou informe uma OP</div>
       </div>`;
   }
-  refreshConfBtn();
+  renderVolCard();
 }
 
-/* ============ CONFIRMAR QUANTIDADE (bateu com a planilha/romaneio) ============ */
-function refreshConfBtn(){
-  const b = document.getElementById("btn-conf");
-  if(!b) return;
+/* ============ CARD VOLUMES + FÍSICO + CONFIRMAR ============ */
+function renderVolCard(){
+  const box = document.getElementById("vol-card");
   const g = gA();
-  const tem = !!(g && g.tipo==="ROM" && g.extra);
-  b.classList.toggle("hidden", !tem);
-  if(tem){
-    const ok = !!g.extra.confirmado;
-    b.classList.toggle("ok", ok);
-    document.getElementById("btn-conf-txt").textContent = ok ? "QTD CONFIRMADA" : "CONFIRMAR QTD";
-  }
+  if(!g){ box.innerHTML = ""; return; }
+  const ex  = g.extra;
+  const fis = g.qManual || 0;
+  const plan = ex ? ex.volumes : null;
+  const conf = !!(ex && ex.confirmado);
+  const manual = !!(ex && !ex.validado);
+  let msg, cls;
+  if(conf){ cls = "conf"; msg = "✓ Quantidade confirmada pelo operador"; }
+  else if(plan == null){ cls = "ok"; msg = fis ? "ajuste pelas setas ou toque no número" : "informe a quantidade física conferida"; }
+  else if(fis === plan && fis > 0){ cls = "ok"; msg = "✓ quantidade bate — toque no ✓ para confirmar"; }
+  else if(fis < plan){ cls = "falta"; msg = "faltam " + (plan - fis) + " para a planilha"; }
+  else { cls = "falta"; msg = "sobram " + (fis - plan) + " em relação à planilha"; }
+  box.innerHTML = `
+    <div class="volcard ${manual ? "manual" : ""}">
+      ${plan != null ? `
+      <div class="volplan">
+        <div class="lbl">${manual ? "Volumes informados" : "Volumes na planilha"}</div>
+        <div class="n">${plan}</div>
+      </div>
+      ${manual ? `<div class="tagman">fora da planilha${ex.op?" · "+ex.op:""} · pallet ${ex.pallet||"—"}</div>` : ""}
+      <div class="voldiv"></div>` : ""}
+      <div class="fislbl">Físico conferido</div>
+      <div class="fisrow">
+        <button class="stepbtn sb-menos" onclick="stepFis(-1)">−</button>
+        <button class="fisnum" onclick="openQtd()" title="Toque para digitar">
+          <div class="v ${plan!=null && fis===plan && fis>0 ? "bateu" : ""}">${fis}</div>
+          <div class="toq">toque no número p/ digitar</div>
+        </button>
+        <button class="stepbtn sb-mais" onclick="stepFis(1)">+</button>
+        <button class="confbtn ${plan!=null ? "show" : ""} ${conf ? "ok" : ""}" onclick="confirmarQtdVinc()" title="Confirmar quantidade">✓</button>
+      </div>
+      <div class="msgfis ${cls}">${msg}</div>
+    </div>`;
 }
-function toggleConfirmarQtd(){
+function stepFis(d){
+  const g = gA(); if(!g) return;
+  g.qManual = Math.max(0, Math.min(9999, (g.qManual||0) + d));
+  if(g.extra) g.extra.confirmado = false;          // mexeu no físico → perde o check
+  if(!inicio) inicio = new Date();
+  render();
+}
+/* confirmar = todas as bobinas existem → físico = volumes da planilha → check → tela fecha */
+function confirmarQtdVinc(){
   const g = gA();
   if(!g || !g.extra){ feedback("warn","Sem quantidade da planilha","neste vínculo"); return; }
   const ex = g.extra;
-  if(ex.confirmado){                       // desfaz a confirmação
-    ex.confirmado = false;
-    feedback("warn","Confirmação desfeita", g.cod);
-    render(); return;
+  if(ex.confirmado){
+    askConfirm("Desfazer confirmação?", g.cod + " ficará sem o check", ()=>{
+      ex.confirmado = false;
+      render();
+    });
+    return;
   }
-  const f = g.bobinas.length + (g.qManual||0);
-  if(f !== ex.volumes){                    // diverge → pergunta antes de confirmar
-    askConfirm("Quantidade divergente",
-      "planilha " + ex.volumes + " × conferido " + f + " — confirmar mesmo assim?",
-      ()=>{
-        ex.confirmado = true;
-        feedback("ok","✓ Quantidade confirmada", g.cod + " (com divergência)");
-        render();
-      });
-  }else{
-    ex.confirmado = true;
-    feedback("ok","✓ Quantidade confirmada", g.cod + " · " + f + " volumes");
-    render();
-  }
+  ex.confirmado = true;
+  g.qManual = ex.volumes;                          // já dá o check com a quantidade vinculada
+  if(!inicio) inicio = new Date();
+  feedback("ok","✓ Quantidade confirmada", g.cod + " · " + ex.volumes + " volumes");
+  render();
+  go("scr-main");                                  // fecha → pronto pra próxima leitura
 }
 
 /* ============ VÍNCULOS LIDOS (expandível) NA TELA PRINCIPAL ============ */
@@ -1333,7 +1443,7 @@ function renderMainVincs(){
             <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span>
             <button class="del-b" onclick="delBobina(${i},${j})" title="Apagar">🗑️</button></div>`).join("")}
           ${(g.qManual||0) ? `<div class="brow man"><span class="bn">✎</span>
-            <span class="bc">Informado manualmente (sem bip)</span><span class="bh">+${g.qManual}</span>
+            <span class="bc">Quantidade física (informada)</span><span class="bh">+${g.qManual}</span>
             <button class="del-b" onclick="delManual(${i})" title="Apagar">🗑️</button></div>` : ""}
           ${!g.bobinas.length && !(g.qManual||0) ? '<div class="empty">Sem leituras neste vínculo ainda.</div>' : ""}
           <div class="hist-actions">
@@ -1353,27 +1463,16 @@ function selecionarVinc(i){
   go("scr-bob");
 }
 function bump(){
-  ["ct-num","cam-cnt"].forEach(id=>{
-    const e=document.getElementById(id); e.classList.remove("bump"); void e.offsetWidth; e.classList.add("bump");
+  ["cam-cnt"].forEach(id=>{
+    const e=document.getElementById(id); if(!e) return;
+    e.classList.remove("bump"); void e.offsetWidth; e.classList.add("bump");
   });
 }
 function vincCount(){ const g=gA(); return g ? g.bobinas.length+(g.qManual||0) : 0; }
 function refreshCamCnt(){ document.getElementById("cam-cnt").textContent = vincCount(); }
 function render(){
-  document.getElementById("ct-num").textContent = vincCount();
   refreshCamCnt();
-  /* Últimas leituras: só bobinas do vínculo aberto no momento */
-  const g = gA();
-  const list = document.getElementById("scanlist");
-  const ult = g ? g.bobinas.slice(-30).reverse() : [];
-  list.innerHTML = ult.length ? ult.map((b,j)=>`
-      <div class="scan-row">
-        <div class="n">${String(g.bobinas.length-j).padStart(2,"0")}</div>
-        <div class="c">${b.cod}</div>
-        <div class="h">${b.hora}</div>
-        <button class="del-b no-print" onclick="delBobina(${gAtual},${g.bobinas.length-1-j})" title="Apagar">🗑️</button>
-      </div>`).join("") : '<div class="empty">Nenhuma leitura ainda.</div>';
-  renderVincCard();
+  renderVincCard();            // inclui o card de volumes + físico
   updateFin();
   saveState();                 // tudo fica salvo no localStorage automaticamente
 }
@@ -1433,7 +1532,7 @@ function renderFin(){
             <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span>
             <button class="del-b no-print" onclick="delBobina(${i},${j})" title="Apagar">🗑️</button></div>`).join("")}
           ${(g.qManual||0) ? `<div class="brow man"><span class="bn">✎</span>
-            <span class="bc">Informado manualmente (sem bip)</span><span class="bh">+${g.qManual}</span>
+            <span class="bc">Quantidade física (informada)</span><span class="bh">+${g.qManual}</span>
             <button class="del-b no-print" onclick="delManual(${i})" title="Apagar">🗑️</button></div>` : ""}
           ${!g.bobinas.length && !(g.qManual||0) ? '<div class="empty">Sem leituras neste vínculo.</div>' : ""}
           <div class="hist-actions no-print">
@@ -1494,8 +1593,13 @@ async function histSync(manual){
     const r = await fetch(FIREBASE_URL + "/conferencias.json");
     const cloud = await r.json();
     const map = {};
-    if(cloud) Object.keys(cloud).forEach(k=>{ if(cloud[k] && cloud[k].grupos) map[k] = cloud[k]; });
+    /* blindagem: só aceita registros completos (id + pelo menos 1 vínculo) */
+    if(cloud) Object.keys(cloud).forEach(k=>{
+      const rec = cloud[k];
+      if(rec && rec.id && Array.isArray(rec.grupos) && rec.grupos.length) map[k] = rec;
+    });
     for(const h of hist){                       // backfill: sobe as que só existem neste aparelho
+      if(!h || !h.id || !Array.isArray(h.grupos) || !h.grupos.length) continue;
       if(!map[String(h.id)]){
         fetch(FIREBASE_URL + "/conferencias/" + h.id + ".json",
               { method:"PUT", body:JSON.stringify(h) }).catch(()=>{});
@@ -1667,35 +1771,42 @@ async function shareWhats(){
 function goHist(){ renderHist(); go("scr-hist"); histSync(); }   // abre já com o local e sincroniza com a nuvem
 function renderHist(){
   const box = document.getElementById("hist-list");
-  if(!hist.length){
+  const validos = (hist||[]).map((h,i)=>{
+    if(!h || !Array.isArray(h.grupos)) return null;                 // blindagem: ignora registros inválidos
+    const grps = h.grupos.filter(g=>g && typeof g==="object");
+    if(!grps.length) return null;
+    grps.forEach(g=>{ if(!Array.isArray(g.bobinas)) g.bobinas=[]; g.qManual = g.qManual||0; });
+    return {h, i, grps};
+  }).filter(Boolean);
+  if(!validos.length){
     box.innerHTML = `<div style="background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:22px;text-align:center;color:var(--muted);font-size:13.5px">Nenhuma conferência finalizada ainda.</div>`;
     return;
   }
-  box.innerHTML = hist.map((h,i)=>{
-    const tot = h.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
-    const first = h.grupos[0];
-    const titulo = h.nome || (h.grupos.length>1 ? first.cod + " +" + (h.grupos.length-1) : first.cod);
-    const fimTxt = new Date(h.fim).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  box.innerHTML = validos.map(({h,i,grps})=>{
+    const tot = grps.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
+    const first = grps[0];
+    const titulo = h.nome || (grps.length>1 ? first.cod + " +" + (grps.length-1) : first.cod);
+    const fimTxt = h.fim ? new Date(h.fim).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "—";
     return `
     <div class="hist-card">
       <button class="hist-head" onclick="histToggle(${i})">
         <div class="hico ${first.tipo==="ROM"?"":"op"}">${first.tipo==="ROM"?"🧾":"⚙️"}</div>
         <div class="grow">
           <div class="t">${titulo}</div>
-          <div class="d">${h.grupos.length} vínculo(s) · ${fimTxt} · ${h.operador}</div>
+          <div class="d">${grps.length} vínculo(s) · ${fimTxt} · ${h.operador||"—"}</div>
         </div>
         <span class="hbadge">${tot}</span>
         <span class="chev" id="chev-${i}">▾</span>
       </button>
       <div class="hist-body hidden" id="hbody-${i}">
-        ${h.grupos.map(g=>`
+        ${grps.map(g=>`
           <div class="gline"><span class="gico">${g.tipo==="ROM"?"🧾":"⚙️"}</span> ${g.cod}
             <span class="gcnt">${g.bobinas.length+(g.qManual||0)} un</span></div>
           ${g.bobinas.map((b,j)=>`
             <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
             <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span></div>`).join("")}
           ${(g.qManual||0)?`<div class="brow man"><span class="bn">✎</span>
-            <span class="bc">Informado manualmente</span><span class="bh">+${g.qManual}</span></div>`:""}
+            <span class="bc">Quantidade física</span><span class="bh">+${g.qManual}</span></div>`:""}
         `).join("")}
         <div class="hist-actions">
           <button class="ha-rep" onclick="histReport(${i})">📄 Ver relatório</button>
@@ -1820,7 +1931,9 @@ if(!modo){
 loadHist();
 esdLoadLocal(); renderEsd(); esdSync();        // base ESD: cache local + sincroniza com o Firebase
 histSync();                                    // conferências compartilhadas com todos com o link
+loadConfronto();
+try{ history.replaceState({scr:"scr-main"}, ""); }catch(e){}   // base do botão voltar
 renderUser(); render(); go("scr-main");
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a270c7469a381b0e',t:'MTc4NjA0ODAwNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
