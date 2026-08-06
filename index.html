@@ -74,6 +74,8 @@ section.screen.active{display:block}
 .status .grow{flex:1;min-width:0}
 .status .t{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .status .d{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.esd-refresh{flex:none;width:42px;height:42px;border-radius:12px;background:#eef2f7;font-size:18px;display:flex;align-items:center;justify-content:center}
+.esd-refresh:active{transform:scale(.92)}
 .mini-btn{flex:none;background:#eef2f7;color:var(--brand2);font-size:12.5px;font-weight:800;border-radius:10px;padding:10px 12px}
 .vbig{font-size:25px;font-weight:800;letter-spacing:.4px;line-height:1.15;word-break:break-all}
 
@@ -318,6 +320,7 @@ section.screen.active{display:block}
   </div>
   <div class="spacer"></div>
   <button class="chip-user" id="chip-user" onclick="openUser()">👤 usuário</button>
+  <button class="chip-user" id="chip-cfg" onclick="openCfg()" title="Menu da planilha ESD" style="margin-left:8px;padding:11px 12px">⚙️</button>
 </header>
 
 <main>
@@ -352,6 +355,7 @@ section.screen.active{display:block}
       <div style="font-size:20px;font-weight:800;color:var(--ok)" id="esd-volumes">0</div>
       <div style="font-size:10px;color:var(--muted)">volumes</div>
     </div>
+    <button class="esd-refresh no-print" onclick="esdSync(true)" title="Atualizar base ESD">🔄</button>
   </div>
 
   <div class="toggles no-print">
@@ -364,10 +368,6 @@ section.screen.active{display:block}
       <span class="bico">📋</span>
       <span>CONFERÊNCIAS REALIZADAS</span>
       <span class="hcnt" id="hist-count">0</span>
-    </button>
-    <button class="bigbtn b-hist" onclick="document.getElementById('file-csv').click()">
-      <span class="bico">📥</span>
-      <span>IMPORTAR PLANILHA ESD</span>
     </button>
     <input type="file" id="file-csv" accept=".csv,text/csv" class="hidden">
     <button class="bigbtn b-inst hidden" id="btn-install" onclick="installApp()">
@@ -499,6 +499,29 @@ section.screen.active{display:block}
   </div>
 </div>
 
+<!-- ============ MENU ⚙️ · PLANILHA ESD ============ -->
+<div id="cfg-ov" class="user-ov hidden" style="padding:14px">
+  <div class="entry">
+    <div class="card-e" style="margin-top:10px">
+      <div class="eico">⚙️</div>
+      <h2>Planilha ESD</h2>
+      <p id="cfg-resumo" style="font-size:13px;font-weight:700;color:var(--muted);margin-top:8px;word-break:break-word">—</p>
+      <div class="bigbtns">
+        <button class="bigbtn b-inst" style="min-height:64px;font-size:16px" onclick="esdSync(true)">
+          <span class="bico">🔄</span><span>ATUALIZAR BASE</span>
+        </button>
+        <button class="bigbtn b-bob" style="min-height:64px;font-size:16px" onclick="importFromCfg()">
+          <span class="bico">📥</span><span>IMPORTAR PLANILHA</span>
+        </button>
+        <button class="bigbtn b-del" style="min-height:64px;font-size:16px" onclick="delBaseEsd()">
+          <span class="bico">🗑️</span><span>EXCLUIR BASE ESD</span>
+        </button>
+        <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closeCfg()">Voltar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ ROMANEIO NÃO ENCONTRADO NA BASE ============ -->
 <div id="pallet-ov" class="user-ov hidden" style="padding:14px">
   <div class="entry">
@@ -585,14 +608,30 @@ let esd = { meta:null, pallets:{} };     // pallets: { "1234123": {v:15, e:"ESD"
 function fbOk(){ return /^https:\/\/.+/.test(FIREBASE_URL); }
 function esdLoadLocal(){ try{ const d = JSON.parse(localStorage.getItem(ESD_CACHE_KEY)); if(d) esd = d; }catch(e){} }
 function esdSaveLocal(){ try{ localStorage.setItem(ESD_CACHE_KEY, JSON.stringify(esd)); }catch(e){} }
-async function esdSync(){                 // baixa a base compartilhada (todo mundo com o link vê a mesma)
-  if(!fbOk()){ renderEsd(); return; }
+async function esdSync(manual){           // baixa a base compartilhada (todo mundo com o link vê a mesma)
+  if(!fbOk()){
+    if(manual) feedback("warn","Sem rede compartilhada","base existe só neste aparelho");
+    renderEsd(); return;
+  }
+  let mudou = false;
   try{
     const r = await fetch(FIREBASE_URL + "/esd.json");
     const data = await r.json();
-    if(data && data.pallets){ esd = data; esdSaveLocal(); }
-  }catch(e){}
+    if(data && data.pallets){
+      if(JSON.stringify(data) !== JSON.stringify(esd)) mudou = true;
+      esd = data; esdSaveLocal();
+    }else{                                        // null = base excluída na nuvem → zera local também
+      if(esd.meta) mudou = true;
+      esd = { meta:null, pallets:{} }; esdSaveLocal();
+    }
+    if(manual) feedback("ok","✓ Base atualizada",
+      esd.meta ? (mudou ? esdTotals().pallets+" pallets · "+esdTotals().volumes+" volumes" : "já estava em dia")
+               : "base vazia no Firebase");
+  }catch(e){
+    if(manual) feedback("err","Falha ao atualizar","verifique a internet");
+  }
   renderEsd();
+  if(manual && !document.getElementById("cfg-ov").classList.contains("hidden")) openCfg();
 }
 function esdTotals(){
   const ks = Object.keys(esd.pallets || {});
@@ -610,8 +649,50 @@ function renderEsd(){
                   (fbOk() ? "" : " · só neste aparelho");
 }
 
+/* ============ MENU ⚙️ · IMPORTAR / EXCLUIR BASE ============ */
+function openCfg(){
+  const t = esdTotals();
+  const r = document.getElementById("cfg-resumo");
+  if(esd.meta){
+    const d = new Date(esd.meta.em);
+    r.textContent = t.pallets + " pallets · " + t.volumes + " volumes — atualizada " +
+      d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) +
+      (fbOk() ? "" : " (só neste aparelho)");
+  }else{
+    r.textContent = "Nenhuma base importada ainda";
+  }
+  document.getElementById("cfg-ov").classList.remove("hidden");
+}
+function closeCfg(){ document.getElementById("cfg-ov").classList.add("hidden"); focusCollector(); }
+function importFromCfg(){
+  closeCfg();
+  setTimeout(()=>document.getElementById("file-csv").click(), 150);
+}
+function delBaseEsd(){
+  if(!esd.meta){ feedback("warn","Nada para excluir","nenhuma base importada"); return; }
+  closeCfg();
+  const t = esdTotals();
+  askConfirm("Excluir base ESD?",
+    t.pallets + " pallets · " + t.volumes + " volumes" + (fbOk() ? " — apaga pra TODOS com o link" : " — só neste aparelho"),
+    async ()=>{
+      esd = { meta:null, pallets:{} };
+      esdSaveLocal(); renderEsd();
+      if(fbOk()){
+        try{
+          const r = await fetch(FIREBASE_URL + "/esd.json", { method:"DELETE" });
+          if(!r.ok) throw 0;
+          feedback("ok","🗑️ Base ESD excluída","apagada pra todos com o link");
+        }catch(e){
+          feedback("err","Excluiu só neste aparelho","sem acesso ao Firebase agora");
+        }
+      }else{
+        feedback("ok","🗑️ Base ESD excluída","neste aparelho");
+      }
+    });
+}
+
 /* ============ IMPORTAR PLANILHA (CSV) ============
-   Coluna N (14ª) = pallet · Coluna P (16ª) = endereço (só ESD) · Coluna T (20ª) = qtde_volumes */
+   Coluna G (7ª) = OP · Coluna N (14ª) = pallet · Coluna P (16ª) = endereço (só ESD) · Coluna T (20ª) = qtde_volumes */
 function importCsv(file){
   const rd = new FileReader();
   rd.onload = async ()=>{
@@ -626,9 +707,11 @@ function importCsv(file){
       const end = (col[15]||"").toUpperCase();                     // P · endereço
       if(!end.startsWith("ESD")) continue;                         // só ESD
       const pallet = (col[13]||"").replace(/\D/g,"").replace(/^0+(?=\d)/,"");   // N · pallet
+      const op = (col[6]||"").toUpperCase();                       // G · OP
       const vol = parseInt((col[19]||"").replace(/\D/g,""), 10) || 0;           // T · volumes
       if(!pallet) continue;
-      if(!pallets[pallet]) pallets[pallet] = { v:0, e:col[15]||"ESD" };
+      if(!pallets[pallet]) pallets[pallet] = { v:0, e:col[15]||"ESD", op };
+      else if(op && !pallets[pallet].op) pallets[pallet].op = op;
       pallets[pallet].v += vol;
       linhasEsd++;
     }
@@ -660,7 +743,7 @@ function palletDoCodigo(code){
 }
 function buscarPallet(code){
   const p = palletDoCodigo(code);
-  return (p && esd.pallets[p]) ? { pallet:p, volumes:esd.pallets[p].v, validado:true } : null;
+  return (p && esd.pallets[p]) ? { pallet:p, volumes:esd.pallets[p].v, op:esd.pallets[p].op||"", validado:true } : null;
 }
 
 /* ============ ESTADO ============ */
@@ -1130,6 +1213,7 @@ function focusCollector(){
   if(!document.getElementById("del-ov").classList.contains("hidden")) return;
   if(!document.getElementById("ios-ov").classList.contains("hidden")) return;
   if(!document.getElementById("pallet-ov").classList.contains("hidden")) return;
+  if(!document.getElementById("cfg-ov").classList.contains("hidden")) return;
   if(document.getElementById("scr-op").classList.contains("active")) return;
   if(document.getElementById("scr-fin").classList.contains("active")) return;
   /* se já existe outro input com foco, não interrompe a digitação */
@@ -1187,7 +1271,7 @@ function renderMainVincs(){
           <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
           <div class="grow">
             <div class="t">${g.cod}</div>
-            <div class="d">${g.tipo==="ROM" ? g.dados.cliente+" · "+g.dados.destino : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.validado?"":" ⚠️"}`:""}</div>
+            <div class="d">${g.tipo==="ROM" ? g.dados.cliente+" · "+g.dados.destino : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.op?" · "+g.extra.op:""}${g.extra.validado?"":" ⚠️"}`:""}</div>
           </div>
           <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
           <span class="chev ${mainExpandido===i?"open":""}" id="mv-chev-${i}">▾</span>
@@ -1287,7 +1371,7 @@ function renderFin(){
           <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
           <div class="grow">
             <div class="t">${g.cod}</div>
-            <div class="d">${g.tipo==="ROM" ? (g.dados.cliente+" · "+g.dados.destino) : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.validado?"":" ⚠️"}`:""}</div>
+            <div class="d">${g.tipo==="ROM" ? (g.dados.cliente+" · "+g.dados.destino) : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.op?" · "+g.extra.op:""}${g.extra.validado?"":" ⚠️"}`:""}</div>
           </div>
           <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
           <span class="chev ${finExpandido===i?"open":""}">▾</span>
@@ -1332,8 +1416,48 @@ function confirmFin(){
     }))
   };
   hist.unshift(rec); saveHistLS();
+  fbUploadRec(rec);                            // sobe o relatório pro Firebase (sem travar a tela)
   renderReport(rec);
   go("scr-rep");
+}
+
+/* ============ RELATÓRIOS NO FIREBASE ============ */
+async function fbUploadRec(rec){
+  if(!fbOk()) return;
+  try{
+    const r = await fetch(FIREBASE_URL + "/conferencias/" + rec.id + ".json",
+                          { method:"PUT", body:JSON.stringify(rec) });
+    if(!r.ok) throw 0;
+    feedback("ok","☁️ Relatório salvo na nuvem","disponível pra todos com o link");
+  }catch(e){
+    feedback("err","Salvou só neste aparelho","sem acesso ao Firebase agora");
+  }
+}
+/* baixa as conferências compartilhadas + envia as locais que ainda não estão na nuvem */
+async function histSync(manual){
+  if(!fbOk()){
+    if(manual) feedback("warn","Sem rede compartilhada","conferências só neste aparelho");
+    renderHist(); return;
+  }
+  try{
+    const r = await fetch(FIREBASE_URL + "/conferencias.json");
+    const cloud = await r.json();
+    const map = {};
+    if(cloud) Object.keys(cloud).forEach(k=>{ if(cloud[k] && cloud[k].grupos) map[k] = cloud[k]; });
+    for(const h of hist){                       // backfill: sobe as que só existem neste aparelho
+      if(!map[String(h.id)]){
+        fetch(FIREBASE_URL + "/conferencias/" + h.id + ".json",
+              { method:"PUT", body:JSON.stringify(h) }).catch(()=>{});
+        map[String(h.id)] = h;
+      }
+    }
+    hist = Object.values(map).sort((a,b)=>b.id-a.id);
+    saveHistLS();
+    if(manual) feedback("ok","✓ Conferências atualizadas", hist.length+" compartilhada"+(hist.length===1?"":"s"));
+  }catch(e){
+    if(manual) feedback("err","Falha ao atualizar","verifique a internet");
+  }
+  renderHist();
 }
 
 /* ============ RELATÓRIO (final e reaberto do histórico) ============ */
@@ -1347,6 +1471,10 @@ function renderReport(rec){
   const totLid = rec.grupos.reduce((a,g)=>a+g.bobinas.length,0);
   const foraBase = rec.grupos.filter(g=>g.extra && !g.extra.validado).length;
   const palletsOk = rec.grupos.filter(g=>g.extra && g.extra.validado).length;
+  const fisDe = g => g.bobinas.length + (g.qManual||0);
+  const temPlan = rec.grupos.some(g=>g.extra);
+  const totPlan = rec.grupos.reduce((a,g)=>a+(g.extra?g.extra.volumes:0),0);
+  const nDiverg = rec.grupos.filter(g=>g.extra && fisDe(g)!==g.extra.volumes).length;
   document.getElementById("report").innerHTML = `
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <div><h2>Relatório de Conferência${rec.nome?": "+rec.nome:""}</h2><p style="font-size:12px;color:var(--muted)">Gerado em ${fim.toLocaleString("pt-BR")}</p></div>
@@ -1359,16 +1487,31 @@ function renderReport(rec){
       <div><b>Quantidade de romaneios / OP's:</b> ${nRom} / ${nOP}</div>
       <div><b>Bobinas / pacotes:</b> ${totBob} (lidos ${totLid} + informados ${totBob-totLid})</div>
       <div><b>Leitura via:</b> ${rec.modo==="camera"?"Câmera":"Coletor de dados"}</div>
-      ${palletsOk||foraBase ? `<div><b>Base ESD:</b> ${palletsOk} romaneio${palletsOk===1?"":"s"} validado${palletsOk===1?"":"s"}${foraBase?` · <span style="color:var(--err);font-weight:800">⚠️ ${foraBase} fora da base</span>`:""}</div>` : ""}
+      ${palletsOk||foraBase ? `<div><b>Base ESD:</b> ${palletsOk} romaneio${palletsOk===1?"":"s"} validado${palletsOk===1?"":"s"}${foraBase?` · <span style="color:var(--err);font-weight:800">⚠️ ${foraBase} fora da base</span>`:""}${nDiverg?` · <span style="color:var(--err);font-weight:800">⚠️ ${nDiverg} divergente${nDiverg===1?"":"s"}</span>`:""}</div>` : ""}
     </div>
     <table class="stable">
-      <thead><tr><th>Romaneio</th><th class="num" style="width:110px">QTD</th></tr></thead>
+      <thead><tr><th>Romaneio</th><th>OP</th><th class="num">Planilha</th><th class="num">Físico</th><th class="num" style="width:58px">Status</th></tr></thead>
       <tbody>
-        ${rec.grupos.map(g=>`
-          <tr><td>${g.tipo==="OP"?"OP ":""}${g.cod}</td>
-              <td class="num">${g.bobinas.length+(g.qManual||0)}</td></tr>`).join("")}
+        ${rec.grupos.map(g=>{
+          const f = fisDe(g);
+          const plan = g.extra ? g.extra.volumes : null;
+          const op = (g.extra && g.extra.op) ? g.extra.op : "—";
+          const st = plan==null ? "—"
+            : f===plan ? '<b style="color:var(--ok)">✓</b>'
+            : `<b style="color:var(--err)">⚠️ ${f>plan?"+":"−"}${Math.abs(f-plan)}</b>`;
+          return `<tr><td>${g.tipo==="OP"?"OP ":""}${g.cod}</td>
+                  <td>${op}</td>
+                  <td class="num">${plan==null?"—":plan}</td>
+                  <td class="num">${f}</td>
+                  <td class="num">${st}</td></tr>`;
+        }).join("")}
       </tbody>
-      <tfoot><tr><td><b>TOTAL</b></td><td class="num"><b>${totBob}</b></td></tr></tfoot>
+      <tfoot><tr>
+        <td colspan="2"><b>TOTAL</b></td>
+        <td class="num"><b>${temPlan?totPlan:"—"}</b></td>
+        <td class="num"><b>${totBob}</b></td>
+        <td class="num"><b>${!temPlan?"—":nDiverg?"⚠️ "+nDiverg:"✓"}</b></td>
+      </tr></tfoot>
     </table>`;
 }
 
@@ -1385,6 +1528,10 @@ function buildCSV(){
   const totLid = rec.grupos.reduce((a,g)=>a+g.bobinas.length,0);
   const foraBase = rec.grupos.filter(g=>g.extra && !g.extra.validado).length;
   const palletsOk = rec.grupos.filter(g=>g.extra && g.extra.validado).length;
+  const fisDe = g => g.bobinas.length + (g.qManual||0);
+  const temPlan = rec.grupos.some(g=>g.extra);
+  const totPlan = rec.grupos.reduce((a,g)=>a+(g.extra?g.extra.volumes:0),0);
+  const nDiverg = rec.grupos.filter(g=>g.extra && fisDe(g)!==g.extra.volumes).length;
   const rows = [
     ["RELATÓRIO DE CONFERÊNCIA"],
     ["Gerado em", fim.toLocaleString("pt-BR")],
@@ -1393,11 +1540,17 @@ function buildCSV(){
     ["Quantidade de romaneios / OP's", nRom+" / "+nOP],
     ["Bobinas / pacotes", totBob+" (lidos "+totLid+" + informados "+(totBob-totLid)+")"],
     ["Leitura via", rec.modo==="camera"?"Câmera":"Coletor de dados"],
-    ...((palletsOk||foraBase) ? [["Base ESD", palletsOk+" validado(s)"+(foraBase?" · "+foraBase+" FORA DA BASE":"")]] : []),
+    ...((palletsOk||foraBase) ? [["Base ESD", palletsOk+" validado(s)"+(foraBase?" · "+foraBase+" FORA DA BASE":"")+(nDiverg?" · "+nDiverg+" DIVERGENTE(S)":"")]] : []),
     [],
-    ["Romaneio","QTD"],
-    ...rec.grupos.map(g=>[(g.tipo==="OP"?"OP ":"")+g.cod, g.bobinas.length+(g.qManual||0)]),
-    ["TOTAL", totBob]
+    ["Romaneio","OP","Planilha","Físico","Status"],
+    ...rec.grupos.map(g=>{
+      const f = fisDe(g);
+      const plan = g.extra ? g.extra.volumes : "";
+      const op = (g.extra && g.extra.op) ? g.extra.op : "";
+      const st = plan==="" ? "" : f===plan ? "OK" : "DIVERGENTE "+(f>plan?"+":"-")+Math.abs(f-plan);
+      return [(g.tipo==="OP"?"OP ":"")+g.cod, op, plan, f, st];
+    }),
+    ["TOTAL","", temPlan?totPlan:"", totBob, temPlan?(nDiverg?"DIVERGÊNCIAS: "+nDiverg:"OK"):""]
   ];
   const csv = "\ufeffsep=;\n" + rows.map(r=>r.join(";")).join("\n");
   const fname = "conferencia_" + fim.toISOString().slice(0,10) + "_" +
@@ -1409,10 +1562,18 @@ function buildCSV(){
 function resumoTexto(rec){
   const fim = new Date(rec.fim);
   const tot = rec.grupos.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
+  const nDiverg = rec.grupos.filter(g=>g.extra && g.bobinas.length+(g.qManual||0)!==g.extra.volumes).length;
   let t = "📋 *Conferência" + (rec.nome?" "+rec.nome:"") + "* — " + fim.toLocaleString("pt-BR") + "\n";
-  t += "Operador: " + rec.operador + "\n\n*Romaneio — QTD*\n";
-  rec.grupos.forEach(g=>{ t += (g.tipo==="OP"?"OP ":"") + g.cod + " — " + (g.bobinas.length+(g.qManual||0)) + "\n"; });
+  t += "Operador: " + rec.operador + "\n\n*Romaneio — OP — Físico × Planilha*\n";
+  rec.grupos.forEach(g=>{
+    const f = g.bobinas.length+(g.qManual||0);
+    const plan = g.extra ? g.extra.volumes : null;
+    const op = (g.extra && g.extra.op) ? g.extra.op : "—";
+    const st = plan==null ? "" : f===plan ? " ✓" : " ⚠️ "+f+"×"+plan;
+    t += (g.tipo==="OP"?"OP ":"") + g.cod + " — " + op + " — " + f + st + "\n";
+  });
   t += "\n*TOTAL: " + tot + " bobinas/pacotes*";
+  if(nDiverg) t += "\n⚠️ " + nDiverg + " romaneio" + (nDiverg===1?"":"s") + " divergente" + (nDiverg===1?"":"s");
   return t;
 }
 
@@ -1447,7 +1608,7 @@ async function shareWhats(){
 }
 
 /* ============ HISTÓRICO ============ */
-function goHist(){ renderHist(); go("scr-hist"); }
+function goHist(){ renderHist(); go("scr-hist"); histSync(); }   // abre já com o local e sincroniza com a nuvem
 function renderHist(){
   const box = document.getElementById("hist-list");
   if(!hist.length){
@@ -1492,7 +1653,17 @@ function histToggle(i){
   document.getElementById("hbody-"+i).classList.toggle("hidden");
   document.getElementById("chev-"+i).classList.toggle("open");
 }
-function histDel(i){ hist.splice(i,1); saveHistLS(); renderHist(); feedback("warn","Conferência excluída",""); }
+function histDel(i){
+  const rec = hist[i];
+  hist.splice(i,1); saveHistLS(); renderHist();
+  if(fbOk() && rec){
+    fetch(FIREBASE_URL + "/conferencias/" + rec.id + ".json", { method:"DELETE" })
+      .then(()=>feedback("warn","Conferência excluída","apagada pra todos com o link"))
+      .catch(()=>feedback("warn","Conferência excluída","só neste aparelho (sem rede)"));
+  }else{
+    feedback("warn","Conferência excluída","");
+  }
+}
 function histReport(i){ renderReport(hist[i]); go("scr-rep"); }
 
 /* ============ NOVA CONFERÊNCIA ============ */
@@ -1592,7 +1763,8 @@ if(!modo){
 }
 loadHist();
 esdLoadLocal(); renderEsd(); esdSync();        // base ESD: cache local + sincroniza com o Firebase
+histSync();                                    // conferências compartilhadas com todos com o link
 renderUser(); render(); go("scr-main");
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2701aabc93aa3fc',t:'MTc4NjA0MDkzNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
