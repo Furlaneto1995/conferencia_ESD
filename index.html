@@ -97,6 +97,9 @@ section.screen.active{display:block}
 .b-whats{background:linear-gradient(135deg,#25d366,#128c7e)}
 .b-qtd{min-height:72px;font-size:16px;color:#0b7a48;background:#fff;border:2.5px dashed #7cc7a3;box-shadow:none}
 .b-qtd .bico{font-size:24px}
+.b-conf{min-height:72px;font-size:16px;color:#0b7a48;background:#fff;border:2.5px solid #7cc7a3;box-shadow:none}
+.b-conf .bico{font-size:24px}
+.b-conf.ok{background:linear-gradient(135deg,#0e9f5d,#0b7a48);color:#fff;border-style:none}
 .b-hist{min-height:72px;font-size:16px;background:#fff;color:#31507c;border:2.5px solid #c3d2e2;box-shadow:none;justify-content:flex-start;text-align:left;padding:14px 16px}
 .b-hist .bico{font-size:24px}
 .b-hist .hcnt{margin-left:auto;background:var(--brand);color:#fff;border-radius:999px;min-width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;padding:0 8px;flex:none}
@@ -407,6 +410,10 @@ section.screen.active{display:block}
     <button class="bigbtn b-qtd" onclick="openQtd()">
       <span class="bico">🔢</span>
       <span>INFORMAR QUANTIDADE</span>
+    </button>
+    <button class="bigbtn b-conf hidden no-print" id="btn-conf" onclick="toggleConfirmarQtd()">
+      <span class="bico">✓</span>
+      <span id="btn-conf-txt">CONFIRMAR QTD</span>
     </button>
   </div>
 
@@ -1231,8 +1238,13 @@ function renderVincCard(){
   if(g && g.tipo==="ROM"){
     const ex = g.extra;
     const linhaEsd = ex
-      ? `<div class="d" style="font-weight:800;margin-top:3px;color:${ex.validado?"var(--ok)":"var(--err)"}">
-           ${ex.validado?"✓ na base ESD":"⚠️ fora da base (manual)"} · Pallet ${ex.pallet} · ${ex.volumes} volume${ex.volumes===1?"":"s"}${ex.op?" · OP "+ex.op:""}
+      ? `<div style="margin-top:6px;background:${ex.validado?"var(--okbg)":"var(--errbg)"};border-radius:12px;padding:8px 10px">
+           <span style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.6px">VOLUMES</span>
+           <div style="font-size:24px;font-weight:800;color:${ex.validado?"var(--ok)":"var(--err)"};line-height:1.1">
+             ${ex.volumes}
+             ${ex.confirmado?'<span style="font-size:14px;color:var(--ok)">✓ confirmado</span>':''}
+           </div>
+           ${ex.validado?"":'<div style="font-size:10.5px;font-weight:700;color:var(--err)">informado manualmente (fora da planilha)</div>'}
          </div>` : "";
     card.innerHTML = `
       <div class="grow" style="text-align:center">
@@ -1255,6 +1267,45 @@ function renderVincCard(){
         <div class="t">Nenhum vínculo</div>
         <div class="d">Leia um romaneio ou informe uma OP</div>
       </div>`;
+  }
+  refreshConfBtn();
+}
+
+/* ============ CONFIRMAR QUANTIDADE (bateu com a planilha/romaneio) ============ */
+function refreshConfBtn(){
+  const b = document.getElementById("btn-conf");
+  if(!b) return;
+  const g = gA();
+  const tem = !!(g && g.tipo==="ROM" && g.extra);
+  b.classList.toggle("hidden", !tem);
+  if(tem){
+    const ok = !!g.extra.confirmado;
+    b.classList.toggle("ok", ok);
+    document.getElementById("btn-conf-txt").textContent = ok ? "QTD CONFIRMADA" : "CONFIRMAR QTD";
+  }
+}
+function toggleConfirmarQtd(){
+  const g = gA();
+  if(!g || !g.extra){ feedback("warn","Sem quantidade da planilha","neste vínculo"); return; }
+  const ex = g.extra;
+  if(ex.confirmado){                       // desfaz a confirmação
+    ex.confirmado = false;
+    feedback("warn","Confirmação desfeita", g.cod);
+    render(); return;
+  }
+  const f = g.bobinas.length + (g.qManual||0);
+  if(f !== ex.volumes){                    // diverge → pergunta antes de confirmar
+    askConfirm("Quantidade divergente",
+      "planilha " + ex.volumes + " × conferido " + f + " — confirmar mesmo assim?",
+      ()=>{
+        ex.confirmado = true;
+        feedback("ok","✓ Quantidade confirmada", g.cod + " (com divergência)");
+        render();
+      });
+  }else{
+    ex.confirmado = true;
+    feedback("ok","✓ Quantidade confirmada", g.cod + " · " + f + " volumes");
+    render();
   }
 }
 
@@ -1497,8 +1548,11 @@ function renderReport(rec){
           const plan = g.extra ? g.extra.volumes : null;
           const op = (g.extra && g.extra.op) ? g.extra.op : "—";
           const st = plan==null ? "—"
-            : f===plan ? '<b style="color:var(--ok)">✓</b>'
-            : `<b style="color:var(--err)">⚠️ ${f>plan?"+":"−"}${Math.abs(f-plan)}</b>`;
+            : f===plan ? (g.extra.confirmado
+                ? '<b style="color:var(--ok)">✓ conf.</b>'
+                : '<b style="color:var(--ok)">✓</b>')
+            : `<b style="color:var(--err)">⚠️ ${f>plan?"+":"−"}${Math.abs(f-plan)}</b>` +
+              (g.extra.confirmado ? '<div style="font-size:10px;font-weight:700;color:var(--ok)">conf.</div>' : "");
           return `<tr><td>${g.tipo==="OP"?"OP ":""}${g.cod}</td>
                   <td>${op}</td>
                   <td class="num">${plan==null?"—":plan}</td>
@@ -1547,7 +1601,8 @@ function buildCSV(){
       const f = fisDe(g);
       const plan = g.extra ? g.extra.volumes : "";
       const op = (g.extra && g.extra.op) ? g.extra.op : "";
-      const st = plan==="" ? "" : f===plan ? "OK" : "DIVERGENTE "+(f>plan?"+":"-")+Math.abs(f-plan);
+      const st = (plan==="" ? "" : f===plan ? "OK" : "DIVERGENTE "+(f>plan?"+":"-")+Math.abs(f-plan))
+                 + (g.extra && g.extra.confirmado ? (plan===""?"":" (CONFIRMADO)") : "");
       return [(g.tipo==="OP"?"OP ":"")+g.cod, op, plan, f, st];
     }),
     ["TOTAL","", temPlan?totPlan:"", totBob, temPlan?(nDiverg?"DIVERGÊNCIAS: "+nDiverg:"OK"):""]
@@ -1570,7 +1625,8 @@ function resumoTexto(rec){
     const plan = g.extra ? g.extra.volumes : null;
     const op = (g.extra && g.extra.op) ? g.extra.op : "—";
     const st = plan==null ? "" : f===plan ? " ✓" : " ⚠️ "+f+"×"+plan;
-    t += (g.tipo==="OP"?"OP ":"") + g.cod + " — " + op + " — " + f + st + "\n";
+    const conf = (g.extra && g.extra.confirmado) ? " ✓conf" : "";
+    t += (g.tipo==="OP"?"OP ":"") + g.cod + " — " + op + " — " + f + st + conf + "\n";
   });
   t += "\n*TOTAL: " + tot + " bobinas/pacotes*";
   if(nDiverg) t += "\n⚠️ " + nDiverg + " romaneio" + (nDiverg===1?"":"s") + " divergente" + (nDiverg===1?"":"s");
@@ -1760,11 +1816,11 @@ loadState();                                   // restaura conferência salva (s
 if(!modo){
   if(window.matchMedia("(min-width:900px)").matches) setModo("coletor");
   else setModo("camera");
-} 
+}
 loadHist();
 esdLoadLocal(); renderEsd(); esdSync();        // base ESD: cache local + sincroniza com o Firebase
 histSync();                                    // conferências compartilhadas com todos com o link
 renderUser(); render(); go("scr-main");
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2701aabc93aa3fc',t:'MTc4NjA0MDkzNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
