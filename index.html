@@ -1628,7 +1628,12 @@ function renderReport(rec){
                 : '<b style="color:var(--ok)">✓</b>')
             : `<b style="color:var(--err)">⚠️ ${f>plan?"+":"−"}${Math.abs(f-plan)}</b>` +
               (g.extra.confirmado ? '<div style="font-size:10px;font-weight:700;color:var(--ok)">conf.</div>' : "");
-          return `<tr><td>${g.tipo==="OP"?"OP ":""}${g.cod}</td>
+          const orig = g.extra
+            ? (g.extra.validado
+                ? '<div style="font-size:10px;font-weight:700;color:var(--ok);margin-top:2px">📋 na planilha</div>'
+                : '<div style="font-size:10px;font-weight:800;color:var(--err);margin-top:2px">⚠️ FORA da planilha</div>')
+            : "";
+          return `<tr><td>${g.tipo==="OP"?"OP ":""}${g.cod}${orig}</td>
                   <td>${op}</td>
                   <td class="num">${plan==null?"—":plan}</td>
                   <td class="num">${f}</td>
@@ -1671,16 +1676,17 @@ function buildCSV(){
     ["Leitura via", rec.modo==="camera"?"Câmera":"Coletor de dados"],
     ...((palletsOk||foraBase) ? [["Base ESD", palletsOk+" validado(s)"+(foraBase?" · "+foraBase+" FORA DA BASE":"")+(nDiverg?" · "+nDiverg+" DIVERGENTE(S)":"")]] : []),
     [],
-    ["Romaneio","OP","Planilha","Físico","Status"],
+    ["Romaneio","Origem","OP","Planilha","Físico","Status"],
     ...rec.grupos.map(g=>{
       const f = fisDe(g);
       const plan = g.extra ? g.extra.volumes : "";
       const op = (g.extra && g.extra.op) ? g.extra.op : "";
+      const origem = g.extra ? (g.extra.validado ? "NA PLANILHA" : "FORA DA PLANILHA") : "";
       const st = (plan==="" ? "" : f===plan ? "OK" : "DIVERGENTE "+(f>plan?"+":"-")+Math.abs(f-plan))
                  + (g.extra && g.extra.confirmado ? (plan===""?"":" (CONFIRMADO)") : "");
-      return [(g.tipo==="OP"?"OP ":"")+g.cod, op, plan, f, st];
+      return [(g.tipo==="OP"?"OP ":"")+g.cod, origem, op, plan, f, st];
     }),
-    ["TOTAL","", temPlan?totPlan:"", totBob, temPlan?(nDiverg?"DIVERGÊNCIAS: "+nDiverg:"OK"):""]
+    ["TOTAL","", "", temPlan?totPlan:"", totBob, temPlan?(nDiverg?"DIVERGÊNCIAS: "+nDiverg:"OK"):""]
   ];
   const csv = "\ufeffsep=;\n" + rows.map(r=>r.join(";")).join("\n");
   const nomeSlug = (rec.nome||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
@@ -1704,7 +1710,8 @@ function resumoTexto(rec){
     const op = (g.extra && g.extra.op) ? g.extra.op : "—";
     const st = plan==null ? "" : f===plan ? " ✓" : " ⚠️ "+f+"×"+plan;
     const conf = (g.extra && g.extra.confirmado) ? " ✓conf" : "";
-    t += (g.tipo==="OP"?"OP ":"") + g.cod + " — " + op + " — " + f + st + conf + "\n";
+    const fora = (g.extra && !g.extra.validado) ? " ⚠️FORA-DA-PLANILHA" : "";
+    t += (g.tipo==="OP"?"OP ":"") + g.cod + " — " + op + " — " + f + st + conf + fora + "\n";
   });
   t += "\n*TOTAL: " + tot + " bobinas/pacotes*";
   if(nDiverg) t += "\n⚠️ " + nDiverg + " romaneio" + (nDiverg===1?"":"s") + " divergente" + (nDiverg===1?"":"s");
@@ -1775,6 +1782,7 @@ function renderHist(){
       <div class="hist-body hidden" id="hbody-${i}">
         ${grps.map(g=>`
           <div class="gline"><span class="gico">${g.tipo==="ROM"?"🧾":"⚙️"}</span> ${g.cod}
+            ${g.extra && !g.extra.validado ? '<span style="font-size:10px;font-weight:800;color:var(--err)">⚠️ FORA DA PLANILHA</span>' : ""}
             <span class="gcnt">${g.bobinas.length+(g.qManual||0)} un</span></div>
           ${g.bobinas.map((b,j)=>`
             <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
@@ -1908,5 +1916,5 @@ loadConfronto();
 try{ history.replaceState({scr:"scr-main"}, ""); }catch(e){}   // base do botão voltar
 renderUser(); render(); go("scr-main");
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2779ae699fec6c1',t:'MTc4NjExOTU4OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
