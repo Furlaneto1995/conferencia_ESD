@@ -106,6 +106,14 @@ section.screen.active{display:block}
 .volplan .n{font-size:32px;font-weight:800;color:var(--ok);line-height:1}
 .volcard.manual .volplan .n{color:var(--err)}
 .volcard .tagman{font-size:10.5px;font-weight:800;color:var(--err);margin-top:3px;text-align:right}
+.endinfo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;background:#f4f7fb;border-radius:12px;padding:10px 12px}
+.endinfo .lbl{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
+.endchip{font-size:15px;font-weight:800;border-radius:999px;padding:5px 12px}
+.endchip.esd{background:#dcfce7;color:#15803d}
+.endchip.out{background:#fef3c7;color:#b45309}
+.pesorow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;background:#f4f7fb;border-radius:12px;padding:8px 12px}
+.pesorow .lbl{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
+.pesorow .inp{flex:1;max-width:150px;text-align:right;font-size:18px;font-weight:800;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px}
 .voldiv{border-top:1.5px dashed var(--line);margin:12px 0 12px}
 .fislbl{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;text-align:center;margin-bottom:10px}
 .fisrow{display:flex;align-items:center;gap:10px}
@@ -701,7 +709,18 @@ function delBaseEsd(){
 }
 
 /* ============ IMPORTAR PLANILHA (CSV) ============
-   Coluna G (7ª) = OP · Coluna N (14ª) = pallet · Coluna P (16ª) = endereço (só ESD) · Coluna T (20ª) = qtde_volumes */
+   Coluna G (7ª) = OP · Coluna N (14ª) = pallet · Coluna P (16ª) = endereço (TODOS) ·
+   Coluna S (19ª) = peso · Coluna T (20ª) = qtde_volumes */
+/* peso BR: aceita 1234.56 · 1234,56 · 1.234,56 */
+function parsePesoBr(s){
+  if(s==null) return 0;
+  s = String(s).trim().replace(/\s/g,"").replace(/[^\d.,-]/g,"");
+  if(!s) return 0;
+  if(s.indexOf(",")>=0){ s = s.replace(/\./g,"").replace(",","."); }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : Math.round(n*100)/100;
+}
+function fmtPeso(n){ return (Number(n)||0).toLocaleString("pt-BR",{maximumFractionDigits:2}); }
 function importCsv(file){
   const rd = new FileReader();
   rd.onload = async ()=>{
@@ -713,32 +732,36 @@ function importCsv(file){
     for(let i=1; i<linhas.length; i++){                 // pula o cabeçalho
       const col = linhas[i].split(sep).map(c=>c.trim().replace(/^"|"$/g,""));
       if(col.length < 20) continue;
-      const end = (col[15]||"").toUpperCase();                     // P · endereço
-      if(!end.startsWith("ESD")) continue;                         // só ESD
+      const end = (col[15]||"").toUpperCase();                     // P · endereço (todos)
       const pallet = (col[13]||"").replace(/\D/g,"").replace(/^0+(?=\d)/,"");   // N · pallet
       const op = (col[6]||"").toUpperCase();                       // G · OP
       const vol = parseInt((col[19]||"").replace(/\D/g,""), 10) || 0;           // T · volumes
+      const peso = parsePesoBr(col[18]);                           // S · peso
       if(!pallet) continue;
-      if(!pallets[pallet]) pallets[pallet] = { v:0, e:col[15]||"ESD", op };
-      else if(op && !pallets[pallet].op) pallets[pallet].op = op;
+      if(!pallets[pallet]) pallets[pallet] = { v:0, e:end, op, p:0 };
+      else{
+        if(op && !pallets[pallet].op) pallets[pallet].op = op;
+        if(end && !pallets[pallet].e)  pallets[pallet].e  = end;
+      }
       pallets[pallet].v += vol;
+      pallets[pallet].p += peso;
       linhasEsd++;
     }
     const qtd = Object.keys(pallets).length;
-    if(!qtd){ feedback("err","Nenhum pallet ESD","não achei linhas com endereço ESD"); return; }
+    if(!qtd){ feedback("err","Nenhum pallet encontrado","verifique as colunas da planilha"); return; }
     esd = { meta:{ em:new Date().toISOString(), por:operador||"—", linhas:linhasEsd }, pallets };
     esdSaveLocal(); renderEsd();
     if(fbOk()){
-      feedback("warn","☁️ Enviando pro Firebase...", qtd+" pallets ESD");
+      feedback("warn","☁️ Enviando pro Firebase...", qtd+" pallets");
       try{
         const r = await fetch(FIREBASE_URL + "/esd.json", { method:"PUT", body:JSON.stringify(esd) });
         if(!r.ok) throw 0;
-        feedback("ok","✓ Base ESD atualizada", qtd+" pallets · visível pra todos com o link");
+        feedback("ok","✓ Base atualizada", qtd+" pallets · visível pra todos com o link");
       }catch(e){
         feedback("err","Salvou só neste aparelho","sem acesso ao Firebase agora");
       }
     }else{
-      feedback("ok","✓ Planilha importada", qtd+" pallets ESD · só neste aparelho");
+      feedback("ok","✓ Planilha importada", qtd+" pallets · só neste aparelho");
     }
   };
   rd.readAsText(file, "UTF-8");
@@ -752,7 +775,10 @@ function palletDoCodigo(code){
 }
 function buscarPallet(code){
   const p = palletDoCodigo(code);
-  return (p && esd.pallets[p]) ? { pallet:p, volumes:esd.pallets[p].v, op:esd.pallets[p].op||"", validado:true } : null;
+  return (p && esd.pallets[p])
+    ? { pallet:p, volumes:esd.pallets[p].v, op:esd.pallets[p].op||"",
+        end:esd.pallets[p].e||"", peso:esd.pallets[p].p||0, validado:true }
+    : null;
 }
 
 /* ============ ESTADO ============ */
@@ -1345,6 +1371,8 @@ function renderVolCard(){
   const plan = ex ? ex.volumes : null;
   const conf = !!(ex && ex.confirmado);
   const manual = !!(ex && !ex.validado);
+  const end  = (ex && ex.end) ? String(ex.end).toUpperCase() : "";
+  const isEsd = !!end && end.startsWith("ESD");
   box.innerHTML = `
     <div class="volcard ${manual ? "manual" : ""}">
       ${plan != null ? `
@@ -1353,6 +1381,17 @@ function renderVolCard(){
         <div class="n">${plan}</div>
       </div>
       ${manual ? `<div class="tagman">fora da planilha${ex.op?" · "+ex.op:""} · pallet ${ex.pallet||"—"}</div>` : ""}
+      ${ex ? `
+      <div class="endinfo">
+        <span class="lbl">Endereço</span>
+        <span class="endchip ${isEsd?"esd":"out"}">${isEsd ? "ESD" : (end || "—")}</span>
+      </div>
+      <div class="pesorow">
+        <span class="lbl">Peso (kg)</span>
+        <input class="inp" id="inp-peso-vinc" inputmode="decimal" autocomplete="off"
+               placeholder="0" value="${ex.peso ? fmtPeso(ex.peso) : ""}"
+               onchange="savePesoVinc()" title="Toque para editar">
+      </div>` : ""}
       <div class="voldiv"></div>` : ""}
       <div class="fislbl">Quantidade</div>
       <div class="fisrow">
@@ -1364,6 +1403,14 @@ function renderVolCard(){
         <button class="confbtn ${plan!=null ? "show" : ""} ${conf ? "ok" : ""}" onclick="confirmarQtdVinc()" title="Confirmar quantidade">✓</button>
       </div>
     </div>`;
+}
+/* peso editável do vínculo atual (sobrescreve o valor que veio da planilha) */
+function savePesoVinc(){
+  const g = gA(); if(!g || !g.extra) return;
+  const el = document.getElementById("inp-peso-vinc");
+  g.extra.peso = parsePesoBr(el.value);
+  el.value = g.extra.peso ? fmtPeso(g.extra.peso) : "";
+  feedback("ok","⚖️ Peso salvo", g.extra.peso ? fmtPeso(g.extra.peso)+" kg" : "zerado");
 }
 function stepFis(d){
   const g = gA(); if(!g) return;
@@ -1406,7 +1453,7 @@ function renderMainVincs(){
             <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
             <div class="grow">
               <div class="t">${g.cod}</div>
-              <div class="d">${g.tipo==="ROM" ? g.dados.cliente+" · "+g.dados.destino : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.op?" · "+g.extra.op:""}${g.extra.validado?"":" ⚠️"}`:""}</div>
+              <div class="d">${g.tipo==="ROM" ? g.dados.cliente+" · "+g.dados.destino : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.op?" · "+g.extra.op:""}${g.extra.end?" · 📍 "+String(g.extra.end).toUpperCase():""}${g.extra.peso?" · ⚖️ "+fmtPeso(g.extra.peso)+" kg":""}${g.extra.validado?"":" ⚠️"}`:""}</div>
             </div>
             <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
           </button>
@@ -1490,7 +1537,7 @@ function renderFin(){
           <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
           <div class="grow">
             <div class="t">${g.cod}</div>
-            <div class="d">${g.tipo==="ROM" ? (g.dados.cliente+" · "+g.dados.destino) : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.op?" · "+g.extra.op:""}${g.extra.validado?"":" ⚠️"}`:""}</div>
+            <div class="d">${g.tipo==="ROM" ? (g.dados.cliente+" · "+g.dados.destino) : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.op?" · "+g.extra.op:""}${g.extra.end?" · 📍 "+String(g.extra.end).toUpperCase():""}${g.extra.peso?" · ⚖️ "+fmtPeso(g.extra.peso)+" kg":""}${g.extra.validado?"":" ⚠️"}`:""}</div>
           </div>
           <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
           <span class="chev ${finExpandido===i?"open":""}">▾</span>
@@ -1600,6 +1647,7 @@ function renderReport(rec){
   const fisDe = g => g.bobinas.length + (g.qManual||0);
   const temPlan = rec.grupos.some(g=>g.extra);
   const totPlan = rec.grupos.reduce((a,g)=>a+(g.extra?g.extra.volumes:0),0);
+  const totPeso = rec.grupos.reduce((a,g)=>a+((g.extra&&g.extra.peso)||0),0);
   const nDiverg = rec.grupos.filter(g=>g.extra && fisDe(g)!==g.extra.volumes).length;
   document.getElementById("report").innerHTML = `
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
@@ -1616,12 +1664,14 @@ function renderReport(rec){
       ${palletsOk||foraBase ? `<div><b>Base ESD:</b> ${palletsOk} romaneio${palletsOk===1?"":"s"} validado${palletsOk===1?"":"s"}${foraBase?` · <span style="color:var(--err);font-weight:800">⚠️ ${foraBase} fora da base</span>`:""}${nDiverg?` · <span style="color:var(--err);font-weight:800">⚠️ ${nDiverg} divergente${nDiverg===1?"":"s"}</span>`:""}</div>` : ""}
     </div>
     <table class="stable">
-      <thead><tr><th>Romaneio</th><th>OP</th><th class="num">Planilha</th><th class="num">Físico</th><th class="num" style="width:58px">Status</th></tr></thead>
+      <thead><tr><th>Romaneio</th><th>Endereço</th><th>OP</th><th class="num">Planilha</th><th class="num">Físico</th><th class="num">Peso (kg)</th><th class="num" style="width:58px">Status</th></tr></thead>
       <tbody>
         ${rec.grupos.map(g=>{
           const f = fisDe(g);
           const plan = g.extra ? g.extra.volumes : null;
           const op = (g.extra && g.extra.op) ? g.extra.op : "—";
+          const end = (g.extra && g.extra.end) ? String(g.extra.end).toUpperCase() : "—";
+          const peso = (g.extra && g.extra.peso) ? fmtPeso(g.extra.peso) : "—";
           const st = plan==null ? "—"
             : f===plan ? (g.extra.confirmado
                 ? '<b style="color:var(--ok)">✓ conf.</b>'
@@ -1634,16 +1684,19 @@ function renderReport(rec){
                 : '<div style="font-size:10px;font-weight:800;color:var(--err);margin-top:2px">⚠️ FORA da planilha</div>')
             : "";
           return `<tr><td>${g.tipo==="OP"?"OP ":""}${g.cod}${orig}</td>
+                  <td>${end}</td>
                   <td>${op}</td>
                   <td class="num">${plan==null?"—":plan}</td>
                   <td class="num">${f}</td>
+                  <td class="num">${peso}</td>
                   <td class="num">${st}</td></tr>`;
         }).join("")}
       </tbody>
       <tfoot><tr>
-        <td colspan="2"><b>TOTAL</b></td>
+        <td colspan="3"><b>TOTAL</b></td>
         <td class="num"><b>${temPlan?totPlan:"—"}</b></td>
         <td class="num"><b>${totBob}</b></td>
+        <td class="num"><b>${totPeso?fmtPeso(totPeso):"—"}</b></td>
         <td class="num"><b>${!temPlan?"—":nDiverg?"⚠️ "+nDiverg:"✓"}</b></td>
       </tr></tfoot>
     </table>`;
@@ -1665,6 +1718,7 @@ function buildCSV(){
   const fisDe = g => g.bobinas.length + (g.qManual||0);
   const temPlan = rec.grupos.some(g=>g.extra);
   const totPlan = rec.grupos.reduce((a,g)=>a+(g.extra?g.extra.volumes:0),0);
+  const totPeso = rec.grupos.reduce((a,g)=>a+((g.extra&&g.extra.peso)||0),0);
   const nDiverg = rec.grupos.filter(g=>g.extra && fisDe(g)!==g.extra.volumes).length;
   const rows = [
     ["RELATÓRIO DE CONFERÊNCIA"],
@@ -1676,17 +1730,19 @@ function buildCSV(){
     ["Leitura via", rec.modo==="camera"?"Câmera":"Coletor de dados"],
     ...((palletsOk||foraBase) ? [["Base ESD", palletsOk+" validado(s)"+(foraBase?" · "+foraBase+" FORA DA BASE":"")+(nDiverg?" · "+nDiverg+" DIVERGENTE(S)":"")]] : []),
     [],
-    ["Romaneio","Origem","OP","Planilha","Físico","Status"],
+    ["Romaneio","Origem","Endereço","OP","Planilha","Físico","Peso (kg)","Status"],
     ...rec.grupos.map(g=>{
       const f = fisDe(g);
       const plan = g.extra ? g.extra.volumes : "";
       const op = (g.extra && g.extra.op) ? g.extra.op : "";
+      const end = (g.extra && g.extra.end) ? String(g.extra.end).toUpperCase() : "";
+      const peso = (g.extra && g.extra.peso) ? fmtPeso(g.extra.peso) : "";
       const origem = g.extra ? (g.extra.validado ? "NA PLANILHA" : "FORA DA PLANILHA") : "";
       const st = (plan==="" ? "" : f===plan ? "OK" : "DIVERGENTE "+(f>plan?"+":"-")+Math.abs(f-plan))
                  + (g.extra && g.extra.confirmado ? (plan===""?"":" (CONFIRMADO)") : "");
-      return [(g.tipo==="OP"?"OP ":"")+g.cod, origem, op, plan, f, st];
+      return [(g.tipo==="OP"?"OP ":"")+g.cod, origem, end, op, plan, f, peso, st];
     }),
-    ["TOTAL","", "", temPlan?totPlan:"", totBob, temPlan?(nDiverg?"DIVERGÊNCIAS: "+nDiverg:"OK"):""]
+    ["TOTAL","", "", "", temPlan?totPlan:"", totBob, totPeso?fmtPeso(totPeso):"", temPlan?(nDiverg?"DIVERGÊNCIAS: "+nDiverg:"OK"):""]
   ];
   const csv = "\ufeffsep=;\n" + rows.map(r=>r.join(";")).join("\n");
   const nomeSlug = (rec.nome||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
@@ -1711,7 +1767,9 @@ function resumoTexto(rec){
     const st = plan==null ? "" : f===plan ? " ✓" : " ⚠️ "+f+"×"+plan;
     const conf = (g.extra && g.extra.confirmado) ? " ✓conf" : "";
     const fora = (g.extra && !g.extra.validado) ? " ⚠️FORA-DA-PLANILHA" : "";
-    t += (g.tipo==="OP"?"OP ":"") + g.cod + " — " + op + " — " + f + st + conf + fora + "\n";
+    const end = (g.extra && g.extra.end) ? " 📍" + String(g.extra.end).toUpperCase() : "";
+    const peso = (g.extra && g.extra.peso) ? " ⚖️" + fmtPeso(g.extra.peso) + "kg" : "";
+    t += (g.tipo==="OP"?"OP ":"") + g.cod + " — " + op + " — " + f + st + conf + fora + end + peso + "\n";
   });
   t += "\n*TOTAL: " + tot + " bobinas/pacotes*";
   if(nDiverg) t += "\n⚠️ " + nDiverg + " romaneio" + (nDiverg===1?"":"s") + " divergente" + (nDiverg===1?"":"s");
@@ -1916,5 +1974,5 @@ loadConfronto();
 try{ history.replaceState({scr:"scr-main"}, ""); }catch(e){}   // base do botão voltar
 renderUser(); render(); go("scr-main");
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2779ae699fec6c1',t:'MTc4NjExOTU4OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
