@@ -139,6 +139,9 @@ section.screen.active{display:block}
 .msgfis.ok{color:var(--ok)}
 .msgfis.falta{color:var(--err)}
 .msgfis.conf{color:var(--ok);background:var(--okbg);border-radius:10px;padding:8px}
+.copyplan{width:100%;margin-top:12px;min-height:48px;border:2px dashed var(--brand);background:#eef4fb;color:var(--brand);
+  border-radius:14px;font-size:15px;font-weight:800;letter-spacing:.3px}
+.copyplan:active{background:#dce9f7;transform:scale(.98)}
 /* botão Voltar sempre fixo no menu ⚙️ */
 .cfg-foot{position:sticky;bottom:0;background:#fff;margin:16px -18px -18px;padding:12px 18px 18px;border-top:1px solid var(--line);border-radius:0 0 18px 18px}
 .b-hist{min-height:72px;font-size:16px;background:#fff;color:#31507c;border:2.5px solid #c3d2e2;box-shadow:none;justify-content:flex-start;text-align:left;padding:14px 16px}
@@ -545,7 +548,10 @@ section.screen.active{display:block}
       <p id="pallet-rom" style="font-size:13px;font-weight:700;color:var(--err);word-break:break-word;margin-top:6px"></p>
       <input id="inp-pallet" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Número do pallet">
       <input id="inp-op-manual" autocomplete="off" placeholder="Número da OP">
-      <input id="inp-vol-manual" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Quantidade de volumes">
+      <div style="display:flex;gap:10px">
+        <input id="inp-vol-manual" style="flex:1;min-width:0" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Volumes">
+        <input id="inp-peso-manual" style="flex:1;min-width:0" inputmode="decimal" autocomplete="off" placeholder="Peso (kg)">
+      </div>
       <div class="bigbtns">
         <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="savePalletManual()">✓ CONFIRMAR</button>
         <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closePallet()">Cancelar</button>
@@ -772,6 +778,11 @@ function palletDoCodigo(code){
   const d = (code||"").replace(/\D/g,"");
   if(d.length < 7) return null;
   return d.slice(-7).replace(/^0+(?=\d)/,"");
+}
+/* romaneio do sistema = código bipado sem o prefixo fixo 6000001 */
+function romCurto(cod){
+  const s = String(cod||"").replace(/^PALLET-/,"");
+  return s.startsWith("6000001") ? s.slice(7).replace(/^0+(?=\d)/,"") : s;
 }
 function buscarPallet(code){
   const p = palletDoCodigo(code);
@@ -1027,6 +1038,7 @@ function abrirPalletManual(code, pallet){
   document.getElementById("inp-pallet").value = pallet || "";
   document.getElementById("inp-op-manual").value = "";
   document.getElementById("inp-vol-manual").value = "";
+  document.getElementById("inp-peso-manual").value = "";
   closeCam();
   document.getElementById("pallet-ov").classList.remove("hidden");
   setTimeout(()=>document.getElementById(pallet ? "inp-op-manual" : "inp-pallet").focus(), 200);
@@ -1040,11 +1052,13 @@ function savePalletManual(){
   const pallet = document.getElementById("inp-pallet").value.trim().replace(/\D/g,"").replace(/^0+(?=\d)/,"");
   const op = document.getElementById("inp-op-manual").value.trim().toUpperCase();
   const vol = parseInt(document.getElementById("inp-vol-manual").value, 10);
+  const peso = parsePesoBr(document.getElementById("inp-peso-manual").value);
   if(!pallet){ feedback("warn","Informe o número do pallet",""); return; }
   if(!vol || vol<1){ feedback("warn","Informe a quantidade de volumes",""); return; }
+  if(!peso){ feedback("warn","Informe o peso (kg)",""); return; }
   const code = romPendente || ("PALLET-"+pallet);
   addVinculo("ROM", code, { cliente:"—", destino:"—", transp:"—", motorista:"—" },
-             { pallet, op, volumes:vol, validado:false });
+             { pallet, op, volumes:vol, peso, end:"", validado:false });
   closePallet(); go("scr-bob");
 }
 
@@ -1402,6 +1416,7 @@ function renderVolCard(){
         <button class="stepbtn sb-mais" onclick="stepFis(1)">+</button>
         <button class="confbtn ${plan!=null ? "show" : ""} ${conf ? "ok" : ""}" onclick="confirmarQtdVinc()" title="Confirmar quantidade">✓</button>
       </div>
+      ${plan!=null && fis!==plan && !conf ? `<button class="copyplan" onclick="copiarPlan()">⤓ Usar ${plan} da planilha</button>` : ""}
     </div>`;
 }
 /* peso editável do vínculo atual (sobrescreve o valor que veio da planilha) */
@@ -1419,7 +1434,8 @@ function stepFis(d){
   if(!inicio) inicio = new Date();
   render();
 }
-/* confirmar = todas as bobinas existem → físico = volumes da planilha → check → tela fecha */
+/* confirmar = confirma a quantidade que o operador inseriu/contou.
+   Se divergir da planilha → avisa e pergunta antes de confirmar. */
 function confirmarQtdVinc(){
   const g = gA();
   if(!g || !g.extra){ feedback("warn","Sem quantidade da planilha","neste vínculo"); return; }
@@ -1431,12 +1447,32 @@ function confirmarQtdVinc(){
     });
     return;
   }
-  ex.confirmado = true;
-  g.qManual = ex.volumes;                          // já dá o check com a quantidade vinculada
+  const fis = g.qManual || 0;
+  if(fis < 1){ feedback("warn","Informe a quantidade física","use os botões − / + ou toque no número"); return; }
   if(!inicio) inicio = new Date();
-  feedback("ok","✓ Quantidade confirmada", g.cod + " · " + ex.volumes + " volumes");
+  if(fis !== ex.volumes){                          // divergente → pergunta antes
+    askConfirm("⚠️ Quantidade divergente!",
+      "Você contou " + fis + ", mas a planilha tem " + ex.volumes + ". Confirmar assim mesmo?",
+      ()=>{
+        ex.confirmado = true;
+        feedback("warn","⚠️ Confirmado com divergência", g.cod + " · físico " + fis + " × planilha " + ex.volumes);
+        render();
+        go("scr-main");
+      });
+    return;
+  }
+  ex.confirmado = true;                            // igual à planilha → confirma direto
+  feedback("ok","✓ Quantidade confirmada", g.cod + " · " + fis + " volumes");
   render();
   go("scr-main");                                  // fecha → pronto pra próxima leitura
+}
+/* preenche o físico com a quantidade da planilha (operador confere e depois dá ✓) */
+function copiarPlan(){
+  const g = gA(); if(!g || !g.extra) return;
+  g.qManual = g.extra.volumes;
+  g.extra.confirmado = false;                      // ainda precisa do ✓ pra confirmar
+  if(!inicio) inicio = new Date();
+  render();
 }
 
 /* ============ VÍNCULOS LIDOS (expandível) NA TELA PRINCIPAL ============ */
@@ -1567,7 +1603,7 @@ function confirmFin(){
   if(!totalBob()){ feedback("warn","Nada para finalizar",""); go("scr-main"); return; }
   const fim = new Date();
   const first = grupos[0];
-  const nomePadrao = first ? first.cod + (grupos.length>1 ? " +"+(grupos.length-1) : "") : "Conferência";
+  const nomePadrao = first ? romCurto(first.cod) + (grupos.length>1 ? " +"+(grupos.length-1) : "") : "Conferência";
   const nome = nomePadrao;
   const rec = {
     id: fim.getTime(),
@@ -1683,7 +1719,7 @@ function renderReport(rec){
                 ? '<div style="font-size:10px;font-weight:700;color:var(--ok);margin-top:2px">📋 na planilha</div>'
                 : '<div style="font-size:10px;font-weight:800;color:var(--err);margin-top:2px">⚠️ FORA da planilha</div>')
             : "";
-          return `<tr><td>${g.tipo==="OP"?"OP ":""}${g.cod}${orig}</td>
+          return `<tr><td>${g.tipo==="OP"?"OP ":""}${romCurto(g.cod)}${orig}</td>
                   <td>${end}</td>
                   <td>${op}</td>
                   <td class="num">${plan==null?"—":plan}</td>
@@ -1740,7 +1776,7 @@ function buildCSV(){
       const origem = g.extra ? (g.extra.validado ? "NA PLANILHA" : "FORA DA PLANILHA") : "";
       const st = (plan==="" ? "" : f===plan ? "OK" : "DIVERGENTE "+(f>plan?"+":"-")+Math.abs(f-plan))
                  + (g.extra && g.extra.confirmado ? (plan===""?"":" (CONFIRMADO)") : "");
-      return [(g.tipo==="OP"?"OP ":"")+g.cod, origem, end, op, plan, f, peso, st];
+      return [(g.tipo==="OP"?"OP ":"")+romCurto(g.cod), origem, end, op, plan, f, peso, st];
     }),
     ["TOTAL","", "", "", temPlan?totPlan:"", totBob, totPeso?fmtPeso(totPeso):"", temPlan?(nDiverg?"DIVERGÊNCIAS: "+nDiverg:"OK"):""]
   ];
@@ -1769,7 +1805,7 @@ function resumoTexto(rec){
     const fora = (g.extra && !g.extra.validado) ? " ⚠️FORA-DA-PLANILHA" : "";
     const end = (g.extra && g.extra.end) ? " 📍" + String(g.extra.end).toUpperCase() : "";
     const peso = (g.extra && g.extra.peso) ? " ⚖️" + fmtPeso(g.extra.peso) + "kg" : "";
-    t += (g.tipo==="OP"?"OP ":"") + g.cod + " — " + op + " — " + f + st + conf + fora + end + peso + "\n";
+    t += (g.tipo==="OP"?"OP ":"") + romCurto(g.cod) + " — " + op + " — " + f + st + conf + fora + end + peso + "\n";
   });
   t += "\n*TOTAL: " + tot + " bobinas/pacotes*";
   if(nDiverg) t += "\n⚠️ " + nDiverg + " romaneio" + (nDiverg===1?"":"s") + " divergente" + (nDiverg===1?"":"s");
@@ -1824,7 +1860,7 @@ function renderHist(){
   box.innerHTML = validos.map(({h,i,grps})=>{
     const tot = grps.reduce((a,g)=>a+g.bobinas.length+(g.qManual||0),0);
     const first = grps[0];
-    const titulo = h.nome || (grps.length>1 ? first.cod + " +" + (grps.length-1) : first.cod);
+    const titulo = h.nome || (grps.length>1 ? romCurto(first.cod) + " +" + (grps.length-1) : romCurto(first.cod));
     const fimTxt = h.fim ? new Date(h.fim).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "—";
     return `
     <div class="hist-card">
@@ -1974,5 +2010,5 @@ loadConfronto();
 try{ history.replaceState({scr:"scr-main"}, ""); }catch(e){}   // base do botão voltar
 renderUser(); render(); go("scr-main");
 </script>
-</body> 
+</body>
 </html>
