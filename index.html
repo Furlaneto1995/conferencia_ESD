@@ -129,9 +129,10 @@ section.screen.active{display:block}
 .fisnum .v{font-size:46px;font-weight:800;line-height:1.05;color:var(--ink)}
 .fisnum .v.bateu{color:var(--ok)}
 .confbtn{
-  flex:none;width:64px;height:64px;border-radius:16px;font-size:26px;color:#fff;
-  background:linear-gradient(135deg,#0e9f5d,#0b7a48);border:none;
+  flex:none;height:64px;padding:0 18px;border-radius:16px;font-size:17px;font-weight:800;letter-spacing:.5px;
+  color:#fff;background:linear-gradient(135deg,#0e9f5d,#0b7a48);border:none;
   display:none;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(11,122,72,.30);
+  white-space:nowrap;
 }
 .bobtop{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .bobtop .voltar{margin-bottom:0}
@@ -157,6 +158,12 @@ section.screen.active{display:block}
 .copyplan{width:100%;margin-top:12px;min-height:48px;border:2px dashed var(--brand);background:#eef4fb;color:var(--brand);
   border-radius:14px;font-size:15px;font-weight:800;letter-spacing:.3px}
 .copyplan:active{background:#dce9f7;transform:scale(.98)}
+.manrom{display:flex;gap:8px;margin-top:2px}
+.manrom input{flex:1;min-width:0;min-height:54px;border:1.5px solid var(--line);border-radius:14px;padding:0 14px;
+  font-size:15px;font-weight:700;background:#fff;color:var(--ink)}
+.manrom button{flex:none;min-height:54px;padding:0 20px;border:0;border-radius:14px;background:var(--brand);
+  color:#fff;font-size:15px;font-weight:800}
+.manrom button:active{transform:scale(.96)}
 /* botão Voltar sempre fixo no menu ⚙️ */
 .cfg-foot{position:sticky;bottom:0;background:#fff;margin:16px -18px -18px;padding:12px 18px 18px;border-top:1px solid var(--line);border-radius:0 0 18px 18px}
 .b-hist{min-height:72px;font-size:16px;background:#fff;color:#31507c;border:2.5px solid #c3d2e2;box-shadow:none;justify-content:flex-start;text-align:left;padding:14px 16px}
@@ -231,7 +238,7 @@ section.screen.active{display:block}
   background:var(--ok);color:#fff;font-size:18px;font-weight:800;
 }
 .footer-bar .fin:disabled{background:#b9c7d6}
-.footer-bar .fin.troc{background:#31507c}
+.footer-bar .fin.troc{background:var(--err)}
 
 /* telas de entrada (OP / usuário / quantidade) */
 .entry{max-width:460px;margin:0 auto}
@@ -406,6 +413,10 @@ section.screen.active{display:block}
       <span>LER ROMANEIO</span>
     </button>
     <input id="inp-home" class="big-col if-coletor" inputmode="none" autocomplete="off" placeholder="⌨️ BIPE O ROMANEIO">
+    <div class="manrom">
+      <input id="inp-rom-manual" inputmode="numeric" autocomplete="off" placeholder="Romaneio com código ilegível? Digite aqui">
+      <button onclick="digitarRomaneio()">OK</button>
+    </div>
     <button class="bigbtn b-semrom" onclick="goOP()">
       <span class="bico">📦</span>
       <span>LER BOBINAS SEM ROMANEIO</span>
@@ -470,6 +481,7 @@ section.screen.active{display:block}
 
 <!-- ============ RELATÓRIO ============ -->
 <section id="scr-rep" class="screen">
+  <button class="voltar no-print" id="rep-voltar" onclick="go('scr-main')">← início</button>
   <div class="report" id="report"></div>
   <div class="bigbtns no-print">
     <button class="bigbtn b-op" style="min-height:64px;font-size:16px" onclick="openExp()">📊 Exportar planilha</button>
@@ -577,10 +589,7 @@ section.screen.active{display:block}
       <p id="pallet-rom" style="font-size:13px;font-weight:700;color:var(--err);word-break:break-word;margin-top:6px"></p>
       <input id="inp-pallet" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Número do pallet">
       <input id="inp-op-manual" autocomplete="off" placeholder="Número da OP">
-      <div style="display:flex;gap:10px">
-        <input id="inp-vol-manual" style="flex:1;min-width:0" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Volumes">
-        <input id="inp-peso-manual" style="flex:1;min-width:0" inputmode="decimal" autocomplete="off" placeholder="Peso (kg)">
-      </div>
+      <input id="inp-vol-manual" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Volumes">
       <div class="bigbtns">
         <button class="bigbtn b-op" style="min-height:64px;font-size:17px" onclick="savePalletManual()">✓ CONFIRMAR</button>
         <button class="bigbtn b-rom no-print" style="min-height:56px;font-size:15px" onclick="closePallet()">Cancelar</button>
@@ -951,7 +960,7 @@ function go(id, fromPop){
     ft.classList.remove("hidden");
   } else if(id==="scr-bob"){
     btn.dataset.mode = "trocar";
-    btn.textContent = "Fechar";
+    btn.textContent = "✕ CANCELAR";
     btn.classList.add("troc");
     btn.disabled = false;
     ft.classList.remove("hidden");
@@ -1035,9 +1044,21 @@ document.getElementById("inp-op").addEventListener("keydown",e=>{
   if(e.key==="Enter"){ const v=e.target.value.trim().toUpperCase(); if(v) onOP(v); }
 });
 function onOP(code){
-  addVinculo("OP", code, null);
+  const hit = buscarOP(code);
+  addVinculo("OP", code, null, hit);   // se a OP estiver na planilha, já traz volumes/peso/endereço
   document.getElementById("inp-op").value = "";
   closeCam(); go("scr-bob");          // NÃO abre câmera — abre só no botão LER BOBINA
+}
+/* OP na planilha: procura em todos os pallets o que tem essa OP */
+function buscarOP(op){
+  const alvo = String(op||"").toUpperCase();
+  if(!alvo || !esd.pallets) return null;
+  const chaves = Object.keys(esd.pallets).filter(p => (esd.pallets[p].op||"").toUpperCase()===alvo);
+  if(!chaves.length) return null;
+  const r = esd.pallets[chaves[0]];
+  return { pallet:chaves.join("|"), volumes:chaves.reduce((a,k)=>a+esd.pallets[k].v,0), op:alvo,
+           end:r.e||"", peso:chaves.reduce((a,k)=>a+(esd.pallets[k].p||0),0),
+           cli:r.cli||"", dt:r.dt||"", item:r.item||"", ver:r.ver||"", validado:true };
 }
 
 /* ============ VÍNCULOS (romaneio ou OP) ============ */
@@ -1073,6 +1094,16 @@ function toggleConfronto(){
   openCfg();                                     // repinta o botão do menu
 }
 
+/* romaneio com código de barras danificado/ilegível → digitação manual */
+function digitarRomaneio(){
+  const inp = document.getElementById("inp-rom-manual");
+  const v = (inp.value||"").trim();
+  if(!v){ feedback("warn","Digite o número do romaneio",""); return; }
+  inp.value = "";
+  closeCam();
+  onRomaneio(v);                        // passa pelo mesmo confronto com a planilha
+}
+document.getElementById("inp-rom-manual").addEventListener("keydown",e=>{ if(e.key==="Enter") digitarRomaneio(); });
 function onRomaneio(code){
   const d = ROMANEIOS[code] || { cliente:"—", destino:"—", transp:"—", motorista:"—" };
   const hit = buscarPallet(code);
@@ -1101,10 +1132,14 @@ let romPendente = null;
 function abrirPalletManual(code, pallet){
   romPendente = code;
   document.getElementById("pallet-rom").textContent = "Romaneio bipado: " + code;
-  document.getElementById("inp-pallet").value = pallet || "";
+  /* o código bipado JÁ É o pallet (últimos 7 dígitos) → não pergunta de novo */
+  const palAuto = palletDoCodigo(code);
+  const inpPal = document.getElementById("inp-pallet");
+  inpPal.value = palAuto || pallet || "";
+  inpPal.parentElement ? null : null;
+  inpPal.style.display = palAuto ? "none" : "";    // esconde quando já veio do código
   document.getElementById("inp-op-manual").value = "";
   document.getElementById("inp-vol-manual").value = "";
-  document.getElementById("inp-peso-manual").value = "";
   closeCam();
   document.getElementById("pallet-ov").classList.remove("hidden");
   setTimeout(()=>document.getElementById(pallet ? "inp-op-manual" : "inp-pallet").focus(), 200);
@@ -1118,14 +1153,12 @@ function savePalletManual(){
   const pallet = document.getElementById("inp-pallet").value.trim().replace(/\D/g,"").replace(/^0+(?=\d)/,"");
   const op = document.getElementById("inp-op-manual").value.trim().toUpperCase();
   const vol = parseInt(document.getElementById("inp-vol-manual").value, 10);
-  const peso = parsePesoBr(document.getElementById("inp-peso-manual").value);
   if(!pallet){ feedback("warn","Informe o número do pallet",""); return; }
   if(!vol || vol<1){ feedback("warn","Informe a quantidade de volumes",""); return; }
-  if(!peso){ feedback("warn","Informe o peso (kg)",""); return; }
   const code = romPendente || ("PALLET-"+pallet);
   addVinculo("ROM", code, { cliente:"—", destino:"—", transp:"—", motorista:"—" },
-             { pallet, op, volumes:vol, peso, end:"", validado:false });
-  closePallet(); go("scr-bob");
+             { pallet, op, volumes:vol, peso:0, end:"", validado:false });
+  closePallet(); go("scr-bob");                    // o peso é informado na própria tela (igual ou um por volume)
 }
 
 function onBobina(code){
@@ -1487,7 +1520,7 @@ function renderVolCard(){
         <div class="n">${plan}</div>
       </div>
       ${manual ? `<div class="tagman">fora da planilha${ex.op?" · "+ex.op:""} · pallet ${ex.pallet||"—"}</div>` : ""}
-      ${ex ? `
+      ${ex && ex.validado ? `
       <div class="endinfo">
         <span class="lbl">Endereço</span>
         <span class="endchip ${isEsd?"esd":"out"}">${isEsd ? "ESD" : (end || "—")}</span>
@@ -1504,11 +1537,11 @@ function renderVolCard(){
           <div class="v ${plan!=null && fis===plan && fis>0 ? "bateu" : ""}">${fis}</div>
         </button>
         <button class="stepbtn sb-mais" onclick="stepFis(1)">+</button>
-        <button class="confbtn ${(plan!=null||g.tipo==="OP") ? "show" : ""} ${conf ? "ok" : ""}"
-                onclick="${g.tipo==="OP" ? "confirmarOpVinc" : "confirmarQtdVinc"}()" title="Confirmar quantidade">✓</button>
+        <button class="confbtn show ${conf ? "ok" : ""}"
+                onclick="${plan!=null ? "confirmarQtdVinc" : "confirmarOpVinc"}()" title="Confirmar quantidade">${conf ? "✓ OK" : "CONFIRMAR"}</button>
       </div>
       ${plan!=null && fis!==plan && !conf ? `<button class="copyplan" onclick="copiarPlan()">⤓ Usar ${plan} da planilha</button>` : ""}
-      ${g.tipo==="OP" ? `
+      ${(!ex || !ex.validado) ? `
       <div class="voldiv"></div>
       <div class="fislbl">Peso dos volumes</div>
       <div class="pesmodo">
@@ -1544,11 +1577,10 @@ function savePesoOp(i,v){
   g.pesos[i]=parsePesoBr(v);
   renderVolCard();
 }
-/* peso total do vínculo: ESD/manual usa extra.peso · OP calcula (todos iguais ou soma individual) */
+/* peso total do vínculo: validado na planilha → extra.peso · OP / fora da planilha → calculado */
 function pesoDe(g){
   if(!g) return 0;
-  if(g.extra && g.extra.peso) return g.extra.peso;
-  if(g.tipo!=="OP") return 0;
+  if(g.extra && g.extra.validado && g.extra.peso) return g.extra.peso;
   if(g.pesoModo==="cada" && Array.isArray(g.pesos))
     return Math.round(g.pesos.reduce((a,b)=>a+(b||0),0)*100)/100;
   return Math.round((g.pesoUnit||0)*(g.qManual||0)*100)/100;
@@ -1576,6 +1608,7 @@ function confirmarQtdVinc(){
   }
   const fis = g.qManual || 0;
   if(fis < 1){ feedback("warn","Informe a quantidade física","use os botões − / + ou toque no número"); return; }
+  if(!ex.validado && !pesoDe(g)){ feedback("warn","Informe o peso dos volumes","escolha o modo e digite o peso"); return; }
   if(!inicio) inicio = new Date();
   if(fis !== ex.volumes){                          // divergente → pergunta antes
     askConfirm("⚠️ Quantidade divergente!",
@@ -1600,7 +1633,7 @@ function proximoRomaneio(){
 }
 /* ✓ CONFIRMAR numa OP (sem romaneio): valida quantidade > 0 e peso informado, marca e segue p/ próxima leitura */
 function confirmarOpVinc(){
-  const g = gA(); if(!g || g.tipo!=="OP") return;
+  const g = gA(); if(!g || (g.extra && g.extra.validado)) return;   // validado na planilha usa confirmarQtdVinc
   if(g.opConf){
     askConfirm("Desfazer confirmação?", g.cod + " ficará sem o check", ()=>{ g.opConf=false; render(); });
     return;
@@ -1768,6 +1801,8 @@ function confirmFin(){
   };
   hist.unshift(rec); saveHistLS();
   fbUploadRec(rec);                            // ☁️ sobe o relatório pro Firebase
+  const v = document.getElementById("rep-voltar");
+  if(v){ v.textContent = "← início"; v.onclick = ()=>go("scr-main"); }
   renderReport(rec);
   downloadCSV();                               // 📥 baixa uma cópia no aparelho (segurança extra)
   feedback("ok","✓ Conferência finalizada","cópia baixada no aparelho + enviada pra nuvem");
@@ -2028,30 +2063,16 @@ function renderHist(){
     const fimTxt = h.fim ? new Date(h.fim).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "—";
     return `
     <div class="hist-card">
-      <button class="hist-head" onclick="histToggle(${i})">
+      <button class="hist-head" onclick="histReport(${i})" title="Abrir esta conferência">
         <div class="hico ${first.tipo==="ROM"?"":"op"}">${first.tipo==="ROM"?"🧾":"⚙️"}</div>
         <div class="grow">
           <div class="t">${titulo}</div>
           <div class="d">${grps.length} vínculo(s) · ${fimTxt} · ${h.operador||"—"}</div>
         </div>
         <span class="hbadge">${tot}</span>
-        <span class="chev" id="chev-${i}">▾</span>
       </button>
-      <div class="hist-body hidden" id="hbody-${i}">
-        ${grps.map(g=>`
-          <div class="gline"><span class="gico">${g.tipo==="ROM"?"🧾":"⚙️"}</span> ${g.cod}
-            ${g.extra && !g.extra.validado ? '<span style="font-size:10px;font-weight:800;color:var(--err)">⚠️ FORA DA PLANILHA</span>' : ""}
-            <span class="gcnt">${g.bobinas.length+(g.qManual||0)} un</span></div>
-          ${g.bobinas.map((b,j)=>`
-            <div class="brow"><span class="bn">${String(j+1).padStart(2,"0")}</span>
-            <span class="bc">${b.cod}</span><span class="bh">${b.hora}</span></div>`).join("")}
-          ${(g.qManual||0)?`<div class="brow man"><span class="bn">✎</span>
-            <span class="bc">Quantidade física</span><span class="bh">+${g.qManual}</span></div>`:""}
-        `).join("")}
-        <div class="hist-actions">
-          <button class="ha-rep" onclick="histReport(${i})">📄 Ver relatório</button>
-          <button class="ha-del" onclick="histDel(${i})">🗑 Excluir</button>
-        </div>
+      <div class="hist-actions" style="border-top:0;padding-top:0">
+        <button class="ha-del" onclick="histDel(${i})">🗑 Excluir</button>
       </div>
     </div>`;
   }).join("");
@@ -2071,7 +2092,12 @@ function histDel(i){
     feedback("warn","Conferência excluída","");
   }
 }
-function histReport(i){ renderReport(hist[i]); go("scr-rep"); }
+function histReport(i){
+  renderReport(hist[i]);
+  const v = document.getElementById("rep-voltar");
+  if(v){ v.textContent = "← conferências"; v.onclick = ()=>goHist(); }
+  go("scr-rep");
+}
 
 /* ============ NOVA CONFERÊNCIA ============ */
 function novaConf(){
@@ -2135,6 +2161,12 @@ if(_isIOS && !_isStandalone) document.getElementById("btn-install").classList.re
 
 if("serviceWorker" in navigator){
   window.addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+  /* SW novo assumiu (skipWaiting+clients.claim no sw.js) → recarrega 1× p/ todos pegarem a versão nova */
+  let _swReload = false;
+  navigator.serviceWorker.addEventListener("controllerchange", ()=>{
+    if(_swReload) return; _swReload = true;
+    location.reload();
+  });
 }
 
 /* ============ ANTI-CÓPIA (só em telas de toque; PC continua livre) ============ */
