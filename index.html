@@ -366,6 +366,15 @@ section.screen.active{display:block}
 .sign{border-top:1.5px solid #94a3b8;text-align:center;font-size:12px;color:var(--muted);padding-top:6px}
 @media(min-width:700px){.signs{grid-template-columns:1fr 1fr;gap:30px}}
 
+/* ============ PC · ocupa a tela toda (mobile permanece igual) ============ */
+@media(min-width:900px){
+  main{max-width:none;padding:18px 28px 130px}
+  .footer-bar .fin{max-width:none}
+  .entry{max-width:560px}
+  .user-ov{padding-left:28px!important;padding-right:28px!important}
+  .stable{font-size:14.5px}
+}
+
 @media print{
   body{background:#fff}
   .appbar,.footer-bar,#flash,#cam,.user-ov,.no-print{display:none!important}
@@ -754,6 +763,11 @@ function importCsv(file){
     const linhas = String(rd.result||"").split(/\r?\n/).filter(l=>l.trim());
     if(linhas.length < 2){ feedback("err","Planilha vazia","arquivo sem linhas de dados"); return; }
     const sep = (linhas[0].split(";").length >= linhas[0].split(",").length) ? ";" : ",";
+    /* ITEM e VERSAO: acha pelo nome do cabeçalho (qualquer posição) */
+    const norm = s => (s||"").trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Z0-9]/g,"");
+    const cab = linhas[0].split(sep).map(c=>norm(c.replace(/^"|"$/g,"")));
+    const iItem = cab.findIndex(c=>c==="ITEM"||c==="ITEMS"||c==="CODITEM"||c==="CODIGOITEM");
+    const iVer  = cab.findIndex(c=>c.startsWith("VERS")||c==="REV"||c==="REVISAO");
     const pallets = {};
     let linhasEsd = 0;
     for(let i=1; i<linhas.length; i++){                 // pula o cabeçalho
@@ -766,13 +780,17 @@ function importCsv(file){
       const peso = parsePesoBr(col[18]);                           // S · peso
       const cli = (col[1]||"");                                    // B · cliente
       const dt  = (col[12]||"");                                   // M · data
+      const item = iItem>=0 ? (col[iItem]||"") : "";               // ITEM (por cabeçalho)
+      const ver  = iVer>=0  ? (col[iVer]||"")  : "";               // VERSAO (por cabeçalho)
       if(!pallet) continue;
-      if(!pallets[pallet]) pallets[pallet] = { v:0, e:end, op, p:0, cli, dt };
+      if(!pallets[pallet]) pallets[pallet] = { v:0, e:end, op, p:0, cli, dt, item, ver };
       else{
-        if(op && !pallets[pallet].op)   pallets[pallet].op  = op;
-        if(end && !pallets[pallet].e)   pallets[pallet].e   = end;
-        if(cli && !pallets[pallet].cli) pallets[pallet].cli = cli;
-        if(dt && !pallets[pallet].dt)   pallets[pallet].dt  = dt;
+        if(op && !pallets[pallet].op)    pallets[pallet].op   = op;
+        if(end && !pallets[pallet].e)    pallets[pallet].e    = end;
+        if(cli && !pallets[pallet].cli)  pallets[pallet].cli  = cli;
+        if(dt && !pallets[pallet].dt)    pallets[pallet].dt   = dt;
+        if(item && !pallets[pallet].item) pallets[pallet].item = item;
+        if(ver && !pallets[pallet].ver)  pallets[pallet].ver  = ver;
       }
       pallets[pallet].v += vol;
       pallets[pallet].p += peso;
@@ -814,7 +832,8 @@ function buscarPallet(code){
   return (p && esd.pallets[p])
     ? { pallet:p, volumes:esd.pallets[p].v, op:esd.pallets[p].op||"",
         end:esd.pallets[p].e||"", peso:esd.pallets[p].p||0,
-        cli:esd.pallets[p].cli||"", dt:esd.pallets[p].dt||"", validado:true }
+        cli:esd.pallets[p].cli||"", dt:esd.pallets[p].dt||"",
+        item:esd.pallets[p].item||"", ver:esd.pallets[p].ver||"", validado:true }
     : null;
 }
 
@@ -985,18 +1004,24 @@ window.addEventListener("popstate", ()=>{
 function foot(){
   const btn = document.getElementById("btn-fin");
   if(btn.dataset.mode==="fin"){ goFin(); return; }
-  /* "Fechar" na tela de volumes = CANCELAR: não salva o vínculo aberto */
+  /* "Fechar" na tela de volumes = CANCELAR: o vínculo não fica salvo (só fica se deu ✓) */
   const g = gA();
-  if(g && gAtual === grupos.length-1 && !g.extra?.confirmado &&
-     !g.qManual && !g.bobinas.length &&
-     g._abertoAgora){
-    grupos.splice(gAtual,1);                       // descarta o vínculo recém-aberto
-    gAtual = -1;
-    feedback("warn","Leitura cancelada","o romaneio não foi salvo");
+  const jaConfirmado = g && (g.extra?.confirmado || g.opConf);
+  if(g && !jaConfirmado){
+    askConfirm("Cancelar esta leitura?",
+      (g.tipo==="ROM"?"O romaneio ":"A OP ") + romCurto(g.cod) + " não será salva",
+      ()=>{
+        grupos.splice(grupos.indexOf(g),1);        // finge que não existiu
+        gAtual = -1;
+        bobMsg(""); closeCam(); render();
+        feedback("warn","Leitura cancelada","nada foi salvo");
+        go("scr-main");
+      });
+    return;
   }
   bobMsg("");
   closeCam();
-  go("scr-main");                                  // volta pra ler outro romaneio/OP
+  go("scr-main");                                  // vínculo confirmado: só fecha
 }
 function goOP(){ go("scr-op"); }
 
@@ -1136,7 +1161,7 @@ function saveQtd(){
   const v = parseInt(document.getElementById("inp-qtd").value, 10);
   if(isNaN(v) || v<0 || v>9999){ feedback("warn","Quantidade inválida","digite um número de 0 a 9999"); return; }
   g.qManual = v;                                   // físico conferido (substitui, não soma)
-  if(g.extra) g.extra.confirmado = false;          // alterou o físico → perde o check
+  if(g.extra) g.extra.confirmado = false; g.opConf = false;   // alterou o físico → perde o check
   if(!inicio) inicio = new Date();
   feedback("ok","✓ "+v+" unidade"+(v===1?"":"s"), "físico conferido em "+g.cod);
   bump(); closeQtd(); render();
@@ -1388,6 +1413,32 @@ function focusCollector(){
 }
 
 /* ============ RENDER ============ */
+/* linha de detalhe do vínculo: cliente · data · vol · OP · 📌 endereço · ⚖️ peso
+   (sem repetir o número do romaneio/pallet, que já aparece no título) */
+function detLine(g){
+  const p = [];
+  if(g.extra){
+    const e = g.extra;
+    if(e.cli) p.push(e.cli);
+    if(e.dt)  p.push(e.dt);
+    p.push(e.volumes + " vol");
+    if(e.op)  p.push(e.op);
+    if(e.end) p.push("📌 " + String(e.end).toUpperCase());
+    const ps = pesoDe(g);
+    if(ps) p.push("⚖️ " + fmtPeso(ps) + " kg");
+    if(!e.validado) p.push("⚠️ fora da planilha");
+    if(e.item) p.push("Item " + e.item);
+    if(e.ver)  p.push("v" + e.ver);
+  } else if(g.tipo==="ROM"){
+    p.push("Sem dados da planilha");
+  } else {
+    if(g.qManual) p.push(g.qManual + " vol");
+    const ps = pesoDe(g);
+    if(ps) p.push("⚖️ " + fmtPeso(ps) + " kg");
+    if(!g.qManual) p.push("Sem romaneio");
+  }
+  return p.join(" · ");
+}
 function renderVincCard(){
   const card = document.getElementById("vinc-card");
   const g = gA();
@@ -1396,7 +1447,7 @@ function renderVincCard(){
       <div class="grow" style="text-align:center">
         <div class="d" style="font-weight:700;color:var(--muted);font-size:11px;letter-spacing:.6px">ROMANEIO</div>
         <div class="vbig">${g.cod}</div>
-        <div class="d">${g.dados.cliente} · ${g.dados.destino}</div>
+        <div class="d">${detLine(g)}</div>
       </div>`;
   } else if(g){
     card.innerHTML = `
@@ -1424,7 +1475,7 @@ function renderVolCard(){
   const ex  = g.extra;
   const fis = g.qManual || 0;
   const plan = ex ? ex.volumes : null;
-  const conf = !!(ex && ex.confirmado);
+  const conf = !!(ex && ex.confirmado) || !!g.opConf;
   const manual = !!(ex && !ex.validado);
   const end  = (ex && ex.end) ? String(ex.end).toUpperCase() : "";
   const isEsd = !!end && end.startsWith("ESD");
@@ -1441,12 +1492,10 @@ function renderVolCard(){
         <span class="lbl">Endereço</span>
         <span class="endchip ${isEsd?"esd":"out"}">${isEsd ? "ESD" : (end || "—")}</span>
       </div>
-      <div class="pesorow">
+      ${ex.peso ? `<div class="pesorow">
         <span class="lbl">Peso (kg)</span>
-        <input class="inp" id="inp-peso-vinc" inputmode="decimal" autocomplete="off"
-               placeholder="0" value="${ex.peso ? fmtPeso(ex.peso) : ""}"
-               onchange="savePesoVinc()" title="Toque para editar">
-      </div>` : ""}
+        <b style="font-size:17px">${fmtPeso(ex.peso)}</b>
+      </div>` : ""}` : ""}
       <div class="voldiv"></div>` : ""}
       <div class="fislbl">Quantidade</div>
       <div class="fisrow">
@@ -1455,7 +1504,8 @@ function renderVolCard(){
           <div class="v ${plan!=null && fis===plan && fis>0 ? "bateu" : ""}">${fis}</div>
         </button>
         <button class="stepbtn sb-mais" onclick="stepFis(1)">+</button>
-        <button class="confbtn ${plan!=null ? "show" : ""} ${conf ? "ok" : ""}" onclick="confirmarQtdVinc()" title="Confirmar quantidade">✓</button>
+        <button class="confbtn ${(plan!=null||g.tipo==="OP") ? "show" : ""} ${conf ? "ok" : ""}"
+                onclick="${g.tipo==="OP" ? "confirmarOpVinc" : "confirmarQtdVinc"}()" title="Confirmar quantidade">✓</button>
       </div>
       ${plan!=null && fis!==plan && !conf ? `<button class="copyplan" onclick="copiarPlan()">⤓ Usar ${plan} da planilha</button>` : ""}
       ${g.tipo==="OP" ? `
@@ -1503,18 +1553,11 @@ function pesoDe(g){
     return Math.round(g.pesos.reduce((a,b)=>a+(b||0),0)*100)/100;
   return Math.round((g.pesoUnit||0)*(g.qManual||0)*100)/100;
 }
-/* peso editável do vínculo atual (sobrescreve o valor que veio da planilha) */
-function savePesoVinc(){
-  const g = gA(); if(!g || !g.extra) return;
-  const el = document.getElementById("inp-peso-vinc");
-  g.extra.peso = parsePesoBr(el.value);
-  el.value = g.extra.peso ? fmtPeso(g.extra.peso) : "";
-  feedback("ok","⚖️ Peso salvo", g.extra.peso ? fmtPeso(g.extra.peso)+" kg" : "zerado");
-}
+
 function stepFis(d){
   const g = gA(); if(!g) return;
   g.qManual = Math.max(0, Math.min(9999, (g.qManual||0) + d));
-  if(g.extra) g.extra.confirmado = false;          // mexeu no físico → perde o check
+  if(g.extra) g.extra.confirmado = false; g.opConf = false;   // mexeu no físico → perde o check
   if(!inicio) inicio = new Date();
   render();
 }
@@ -1555,6 +1598,21 @@ function proximoRomaneio(){
   go("scr-main");
   if(modo==="camera"){ setTimeout(()=>openCam("rom"), 250); }
 }
+/* ✓ CONFIRMAR numa OP (sem romaneio): valida quantidade > 0 e peso informado, marca e segue p/ próxima leitura */
+function confirmarOpVinc(){
+  const g = gA(); if(!g || g.tipo!=="OP") return;
+  if(g.opConf){
+    askConfirm("Desfazer confirmação?", g.cod + " ficará sem o check", ()=>{ g.opConf=false; render(); });
+    return;
+  }
+  if((g.qManual||0) < 1){ feedback("warn","Informe a quantidade física","use os botões − / + ou toque no número"); return; }
+  if(!pesoDe(g)){ feedback("warn","Informe o peso dos volumes","escolha o modo e digite o peso"); return; }
+  g.opConf = true; g._abertoAgora = false;
+  if(!inicio) inicio = new Date();
+  feedback("ok","✓ OP confirmada", g.cod + " · " + g.qManual + " volumes · " + fmtPeso(pesoDe(g)) + " kg");
+  render();
+  proximoRomaneio();
+}
 /* preenche o físico com a quantidade da planilha (operador confere e depois dá ✓) */
 function copiarPlan(){
   const g = gA(); if(!g || !g.extra) return;
@@ -1578,7 +1636,7 @@ function renderMainVincs(){
             <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
             <div class="grow">
               <div class="t">${g.cod}</div>
-              <div class="d">${g.tipo==="ROM" ? g.dados.cliente+" · "+g.dados.destino : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.op?" · "+g.extra.op:""}${g.extra.end?" · 📍 "+String(g.extra.end).toUpperCase():""}${g.extra.peso?" · ⚖️ "+fmtPeso(g.extra.peso)+" kg":""}${g.extra.validado?"":" ⚠️"}`:""}</div>
+              <div class="d">${detLine(g)}</div>
             </div>
             <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
           </button>
@@ -1662,7 +1720,7 @@ function renderFin(){
           <div class="hico ${g.tipo==="ROM"?"":"op"}">${g.tipo==="ROM"?"🧾":"⚙️"}</div>
           <div class="grow">
             <div class="t">${g.cod}</div>
-            <div class="d">${g.tipo==="ROM" ? (g.dados.cliente+" · "+g.dados.destino) : "Sem romaneio"}${g.extra?` · 📦 ${g.extra.pallet} · ${g.extra.volumes} vol${g.extra.op?" · "+g.extra.op:""}${g.extra.end?" · 📍 "+String(g.extra.end).toUpperCase():""}${g.extra.peso?" · ⚖️ "+fmtPeso(g.extra.peso)+" kg":""}${g.extra.validado?"":" ⚠️"}`:""}</div>
+            <div class="d">${detLine(g)}</div>
           </div>
           <span class="hbadge">${g.bobinas.length + (g.qManual||0)}</span>
           <span class="chev ${finExpandido===i?"open":""}">▾</span>
@@ -1703,7 +1761,7 @@ function confirmFin(){
     grupos: grupos.map(g=>({
       tipo:g.tipo, cod:g.cod, dados:g.dados, extra:g.extra||null,
       bobinas:g.bobinas.map(b=>({cod:b.cod,hora:b.hora})),
-      qManual:g.qManual||0,
+      qManual:g.qManual||0, opConf:!!g.opConf,
       pesoModo:g.pesoModo||"unico", pesoUnit:g.pesoUnit||0,
       pesos:Array.isArray(g.pesos)?g.pesos:[]
     }))
@@ -1791,7 +1849,7 @@ function renderReport(rec){
       ${palletsOk||foraBase ? `<div><b>Base ESD:</b> ${palletsOk} romaneio${palletsOk===1?"":"s"} validado${palletsOk===1?"":"s"}${foraBase?` · <span style="color:var(--err);font-weight:800">⚠️ ${foraBase} fora da base</span>`:""}${nDiverg?` · <span style="color:var(--err);font-weight:800">⚠️ ${nDiverg} divergente${nDiverg===1?"":"s"}</span>`:""}</div>` : ""}
     </div>
     <table class="stable">
-      <thead><tr><th>Romaneio</th><th>Cliente</th><th>Data</th><th>Endereço</th><th>OP</th><th class="num">Planilha</th><th class="num">Físico</th><th class="num">Peso (kg)</th><th class="num" style="width:58px">Status</th></tr></thead>
+      <thead><tr><th>Romaneio</th><th>Cliente</th><th>Data</th><th>Item</th><th>Versão</th><th>Endereço</th><th>OP</th><th class="num">Planilha</th><th class="num">Físico</th><th class="num">Peso (kg)</th><th class="num" style="width:58px">Status</th></tr></thead>
       <tbody>
         ${rec.grupos.map(g=>{
           const f = fisDe(g);
@@ -1800,6 +1858,8 @@ function renderReport(rec){
           const end = (g.extra && g.extra.end) ? String(g.extra.end).toUpperCase() : "—";
           const cli = (g.extra && g.extra.cli) ? g.extra.cli : "—";
           const dt  = (g.extra && g.extra.dt)  ? g.extra.dt  : "—";
+          const item = (g.extra && g.extra.item) ? g.extra.item : "—";
+          const ver  = (g.extra && g.extra.ver)  ? g.extra.ver  : "—";
           const pesoN = pesoDe(g);
           const peso = pesoN ? fmtPeso(pesoN) : "—";
           const st = plan==null ? "—"
@@ -1816,6 +1876,8 @@ function renderReport(rec){
           return `<tr><td>${g.tipo==="OP"?"OP ":""}${romCurto(g.cod)}${orig}</td>
                   <td>${cli}</td>
                   <td>${dt}</td>
+                  <td>${item}</td>
+                  <td>${ver}</td>
                   <td>${end}</td>
                   <td>${op}</td>
                   <td class="num">${plan==null?"—":plan}</td>
@@ -1825,7 +1887,7 @@ function renderReport(rec){
         }).join("")}
       </tbody>
       <tfoot><tr>
-        <td colspan="5"><b>TOTAL</b></td>
+        <td colspan="7"><b>TOTAL</b></td>
         <td class="num"><b>${temPlan?totPlan:"—"}</b></td>
         <td class="num"><b>${totBob}</b></td>
         <td class="num"><b>${totPeso?fmtPeso(totPeso):"—"}</b></td>
@@ -1862,7 +1924,7 @@ function buildCSV(){
     ["Leitura via", rec.modo==="camera"?"Câmera":"Coletor de dados"],
     ...((palletsOk||foraBase) ? [["Base ESD", palletsOk+" validado(s)"+(foraBase?" · "+foraBase+" FORA DA BASE":"")+(nDiverg?" · "+nDiverg+" DIVERGENTE(S)":"")]] : []),
     [],
-    ["Romaneio","Origem","Cliente","Data","Endereço","OP","Planilha","Físico","Peso (kg)","Status"],
+    ["Romaneio","Origem","Cliente","Data","Item","Versão","Endereço","OP","Planilha","Físico","Peso (kg)","Status"],
     ...rec.grupos.map(g=>{
       const f = fisDe(g);
       const plan = g.extra ? g.extra.volumes : "";
@@ -1870,13 +1932,15 @@ function buildCSV(){
       const end = (g.extra && g.extra.end) ? String(g.extra.end).toUpperCase() : "";
       const cli = (g.extra && g.extra.cli) ? g.extra.cli : "";
       const dt  = (g.extra && g.extra.dt)  ? g.extra.dt  : "";
+      const item = (g.extra && g.extra.item) ? g.extra.item : "";
+      const ver  = (g.extra && g.extra.ver)  ? g.extra.ver  : "";
       const peso = pesoDe(g) ? fmtPeso(pesoDe(g)) : "";
       const origem = g.extra ? (g.extra.validado ? "NA PLANILHA" : "FORA DA PLANILHA") : "";
       const st = (plan==="" ? "" : f===plan ? "OK" : "DIVERGENTE "+(f>plan?"+":"-")+Math.abs(f-plan))
                  + (g.extra && g.extra.confirmado ? (plan===""?"":" (CONFIRMADO)") : "");
-      return [(g.tipo==="OP"?"OP ":"")+romCurto(g.cod), origem, cli, dt, end, op, plan, f, peso, st];
+      return [(g.tipo==="OP"?"OP ":"")+romCurto(g.cod), origem, cli, dt, item, ver, end, op, plan, f, peso, st];
     }),
-    ["TOTAL","", "", "", "", "", temPlan?totPlan:"", totBob, totPeso?fmtPeso(totPeso):"", temPlan?(nDiverg?"DIVERGÊNCIAS: "+nDiverg:"OK"):""]
+    ["TOTAL","", "", "", "", "", "", "", temPlan?totPlan:"", totBob, totPeso?fmtPeso(totPeso):"", temPlan?(nDiverg?"DIVERGÊNCIAS: "+nDiverg:"OK"):""]
   ];
   const csv = "\ufeffsep=;\n" + rows.map(r=>r.join(";")).join("\n");
   const nomeSlug = (rec.nome||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
@@ -1901,7 +1965,7 @@ function resumoTexto(rec){
     const st = plan==null ? "" : f===plan ? " ✓" : " ⚠️ "+f+"×"+plan;
     const conf = (g.extra && g.extra.confirmado) ? " ✓conf" : "";
     const fora = (g.extra && !g.extra.validado) ? " ⚠️FORA-DA-PLANILHA" : "";
-    const end = (g.extra && g.extra.end) ? " 📍" + String(g.extra.end).toUpperCase() : "";
+    const end = (g.extra && g.extra.end) ? " 📌" + String(g.extra.end).toUpperCase() : "";
     const cli = (g.extra && g.extra.cli) ? " 👤" + g.extra.cli : "";
     const dt  = (g.extra && g.extra.dt)  ? " 📅" + g.extra.dt  : "";
     const peso = pesoDe(g) ? " ⚖️" + fmtPeso(pesoDe(g)) + "kg" : "";
