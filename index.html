@@ -1132,12 +1132,12 @@ let romPendente = null;
 function abrirPalletManual(code, pallet){
   romPendente = code;
   document.getElementById("pallet-rom").textContent = "Romaneio bipado: " + code;
-  /* o código bipado JÁ É o pallet (últimos 7 dígitos) → não pergunta de novo */
-  const palAuto = palletDoCodigo(code);
+  /* o código bipado JÁ É o pallet → já vem preenchido (editável se precisar) */
+  const palAuto = palletDoCodigo(code)
+               || String(code||"").replace(/\D/g,"").replace(/^0+(?=\d)/,"");
   const inpPal = document.getElementById("inp-pallet");
   inpPal.value = palAuto || pallet || "";
-  inpPal.parentElement ? null : null;
-  inpPal.style.display = palAuto ? "none" : "";    // esconde quando já veio do código
+  inpPal.style.display = "";
   document.getElementById("inp-op-manual").value = "";
   document.getElementById("inp-vol-manual").value = "";
   closeCam();
